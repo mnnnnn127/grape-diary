@@ -283,6 +283,17 @@ input[type="file"] { display: none; }
 
 body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",Meiryo,sans-serif!important}
 .gdv{padding:16px}.gdv-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}.gdv-chip{flex:none;border:1px solid #ddd;background:rgba(255,255,255,.85);border-radius:999px;padding:8px 13px;font-weight:700}.gdv-chip.on{background:#7C3AED;color:white}.gdv-top{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:14px}.gdv-month,.gdv-input,.gdv-text{width:100%;border:1px solid #ddd;border-radius:13px;padding:10px;background:white}.gdv-write,.gdv-save{border:0;border-radius:999px;background:#7C3AED;color:white;padding:10px 16px;font-weight:700;white-space:nowrap}.gdv-form{display:none;background:rgba(255,255,255,.92);border-radius:18px;padding:14px;margin-bottom:15px}.gdv-form.on{display:block}.gdv-label{font-size:12px;font-weight:700;display:block;margin:10px 2px 5px;color:#5B21B6}.gdv-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.gdv-text{min-height:85px;resize:vertical}.gdv-preview{width:100%;max-height:220px;object-fit:cover;border-radius:13px;margin-top:8px}.gdv-card{background:rgba(255,255,255,.9);border-radius:18px;overflow:hidden;margin-bottom:12px;box-shadow:0 3px 14px rgba(0,0,0,.07)}.gdv-card img{width:100%;height:190px;object-fit:cover}.gdv-body{padding:13px}.gdv-meta{font-size:11px;color:#777;display:flex;justify-content:space-between}.gdv-title{font-size:16px;font-weight:700;margin:5px 0}.gdv-note{font-size:13px;line-height:1.6;white-space:pre-wrap}.gdv-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.gdv-tag{font-size:11px;background:#F5F3FF;border-radius:999px;padding:4px 8px}.gdv-delete{width:100%;margin-top:8px;border:1px solid #fca5a5;background:#fff5f5;color:#b91c1c;border-radius:999px;padding:9px;font-weight:700}.gdv-empty{text-align:center;color:#888;padding:28px 8px}
+
+/* じぃじのぶどう日記：やさしい丸文字タイトル */
+.jiji-cute-title{
+  font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro",
+              "Yu Gothic","Meiryo",sans-serif !important;
+  font-weight:700 !important;
+  letter-spacing:.08em !important;
+  line-height:1.45 !important;
+  text-shadow:0 2px 8px rgba(255,255,255,.75),0 1px 2px rgba(70,40,80,.16);
+}
+
 </style>
 </head>
 <body>
@@ -297,7 +308,7 @@ body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN"
     <div class="page active" id="page-home">
       <div class="section">
         
-<div class="home-title-wrap"><div class="home-main-title">じぃじのぶどう日記</div></div>
+<div class="home-title-wrap"><div class="home-main-title" class="jiji-cute-title">じぃじのぶどう日記</div></div>
         <button class="quick-toggle" id="quick-toggle" onclick="toggleQuickActions()"><span>クイックアクション</span><span class="quick-arrow">▼</span></button>
         <div class="home-four-grid" id="quick-actions-panel">
           <button class="card card-sm home-four-btn" onclick="navTo('diary')"><div class="q-title">ぶどう日記</div></button>
