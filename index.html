@@ -9,7 +9,17 @@
 <meta name="apple-mobile-web-app-title" content="ぶどう日記">
 <link rel="manifest" href="#" id="manifest-link">
 <title id="app-title">🍇 ぶどう栽培日記</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+let gdvVariety=null,gdvEdit=null,gdvPhotoData="";
+function gdvInit(){state.gdvVarieties=state.gdvVarieties||[state.variety?.name||"シャインマスカット"];state.gdvEntries=state.gdvEntries||[];gdvVariety=gdvVariety||state.gdvVarieties[0];let m=document.getElementById("gdv-month");if(m&&!m.value)m.value=new Date().toISOString().slice(0,7);saveState();gdvRender()}
+function gdvRender(){if(!document.getElementById("gdv-bar"))return;if(!state.gdvVarieties)return gdvInit();document.getElementById("gdv-bar").innerHTML=state.gdvVarieties.map(v=>`<button class="gdv-chip ${v===gdvVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`).join("")+`<button class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;let mo=document.getElementById("gdv-month").value||new Date().toISOString().slice(0,7);let [y,m]=mo.split("-");document.getElementById("gdv-heading").textContent=`${+y}年${+m}月の記録`;let a=state.gdvEntries.filter(e=>e.variety===gdvVariety&&(e.date||"").slice(0,7)===mo).sort((a,b)=>(b.date||"").localeCompare(a.date||""));document.getElementById("gdv-list").innerHTML=a.length?a.map(e=>`<div class="gdv-card" onclick="gdvOpen('${e.id}')">${e.photo?`<img src="${e.photo}">`:""}<div class="gdv-body"><div class="gdv-meta"><span>🍇 ${escHtml(e.variety)}</span><span>${escHtml(e.date||"")}</span></div><div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>${e.note?`<div class="gdv-note">${escHtml(e.note)}</div>`:""}<div class="gdv-tags">${e.size?`<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>`:""}${e.color?`<span class="gdv-tag">色 ${escHtml(e.color)}</span>`:""}</div></div></div>`).join(""):`<div class="gdv-empty">この月の日記はまだありません 🍇</div>`}
+function gdvSelect(v){gdvVariety=v;gdvRender()}
+function gdvAdd(){let v=prompt("追加するぶどうの品種名");if(!v||!v.trim())return;v=v.trim();if(!state.gdvVarieties.includes(v))state.gdvVarieties.push(v);gdvVariety=v;saveState();gdvRender()}
+function gdvOpen(id=null){gdvEdit=id;gdvPhotoData="";let e=id?state.gdvEntries.find(x=>x.id===id):null;if(e){gdvVariety=e.variety;gdvPhotoData=e.photo||""}document.getElementById("gdv-variety").value=gdvVariety||"";document.getElementById("gdv-title").value=e?.title||"";document.getElementById("gdv-date").value=e?.date||new Date().toISOString().slice(0,10);document.getElementById("gdv-note").value=e?.note||"";document.getElementById("gdv-size").value=e?.size||"";document.getElementById("gdv-color").value=e?.color||"";let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display=gdvPhotoData?"block":"none";document.getElementById("gdv-delete").style.display=id?"block":"none";document.getElementById("gdv-form").classList.add("on")}
+function gdvPhoto(i){if(!i.files[0])return;let r=new FileReader();r.onload=e=>{gdvPhotoData=e.target.result;let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display="block"};r.readAsDataURL(i.files[0])}
+function gdvSave(){let date=document.getElementById("gdv-date").value||new Date().toISOString().slice(0,10),o={id:gdvEdit||"g"+Date.now(),variety:gdvVariety||"",title:document.getElementById("gdv-title").value,date,note:document.getElementById("gdv-note").value,size:document.getElementById("gdv-size").value,color:document.getElementById("gdv-color").value,photo:gdvPhotoData};if(gdvEdit){let i=state.gdvEntries.findIndex(x=>x.id===gdvEdit);if(i>=0)state.gdvEntries[i]=o}else state.gdvEntries.push(o);saveState();document.getElementById("gdv-month").value=date.slice(0,7);document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("🍇 日記を記録しました")}
+function gdvDelete(){if(!gdvEdit||!confirm("この日記を削除しますか？"))return;state.gdvEntries=state.gdvEntries.filter(x=>x.id!==gdvEdit);saveState();document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("日記を削除しました")}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
@@ -252,6 +262,27 @@ input[type="file"] { display: none; }
 .home-four-btn .q-title{font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:12px;}
 .home-only-nav{background:transparent!important;border-top:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
 .home-only-nav .nav-item{background:transparent!important;color:white!important;font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:13px;font-weight:800;text-shadow:0 1px 5px rgba(0,0,0,.85);padding:12px 4px calc(10px + env(safe-area-inset-bottom));}
+
+.page-back-btn{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin:4px 0 14px;padding:9px 16px;border:1px solid rgba(255,255,255,.85);
+ border-radius:999px;background:rgba(255,255,255,.80);
+ color:#4b3b63;font-size:13px;font-weight:700;cursor:pointer;
+ box-shadow:0 2px 8px rgba(0,0,0,.08);backdrop-filter:blur(5px);
+}
+.page-back-btn:active{transform:scale(.97)}
+
+/* Quick actions: 2 columns x 2 rows */
+#quick-actions,
+.quick-actions,
+.quick-actions-grid,
+#quick-actions-buttons {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+
+body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",Meiryo,sans-serif!important}
+.gdv{padding:16px}.gdv-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px}.gdv-chip{flex:none;border:1px solid #ddd;background:rgba(255,255,255,.85);border-radius:999px;padding:8px 13px;font-weight:700}.gdv-chip.on{background:#7C3AED;color:white}.gdv-top{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:14px}.gdv-month,.gdv-input,.gdv-text{width:100%;border:1px solid #ddd;border-radius:13px;padding:10px;background:white}.gdv-write,.gdv-save{border:0;border-radius:999px;background:#7C3AED;color:white;padding:10px 16px;font-weight:700;white-space:nowrap}.gdv-form{display:none;background:rgba(255,255,255,.92);border-radius:18px;padding:14px;margin-bottom:15px}.gdv-form.on{display:block}.gdv-label{font-size:12px;font-weight:700;display:block;margin:10px 2px 5px;color:#5B21B6}.gdv-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.gdv-text{min-height:85px;resize:vertical}.gdv-preview{width:100%;max-height:220px;object-fit:cover;border-radius:13px;margin-top:8px}.gdv-card{background:rgba(255,255,255,.9);border-radius:18px;overflow:hidden;margin-bottom:12px;box-shadow:0 3px 14px rgba(0,0,0,.07)}.gdv-card img{width:100%;height:190px;object-fit:cover}.gdv-body{padding:13px}.gdv-meta{font-size:11px;color:#777;display:flex;justify-content:space-between}.gdv-title{font-size:16px;font-weight:700;margin:5px 0}.gdv-note{font-size:13px;line-height:1.6;white-space:pre-wrap}.gdv-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.gdv-tag{font-size:11px;background:#F5F3FF;border-radius:999px;padding:4px 8px}.gdv-delete{width:100%;margin-top:8px;border:1px solid #fca5a5;background:#fff5f5;color:#b91c1c;border-radius:999px;padding:9px;font-weight:700}.gdv-empty{text-align:center;color:#888;padding:28px 8px}
 </style>
 </head>
 <body>
@@ -265,16 +296,8 @@ input[type="file"] { display: none; }
   <div class="content">
     <div class="page active" id="page-home">
       <div class="section">
-        <div style="background: linear-gradient(135deg, var(--grape-light), var(--rose-light)); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden;">
-          <div style="font-size: 13px; font-weight: 700; color: var(--grape-dark); margin-bottom: 4px;">📅 今日の栽培ポイント</div>
-          <div style="font-size: 12px; color: var(--text-mid); line-height: 1.6;" id="today-tip">読み込み中...</div>
-          <div style="position: absolute; right: 12px; bottom: -8px; font-size: 72px; opacity: 0.12;">🍇</div>
-        </div>
-        <button class="home-diary-card" onclick="navTo('diary')">
-          <div><div style="font-size:15px;font-weight:800;color:var(--grape-dark);">📖 成長日記</div><div style="font-size:11px;color:var(--text-mid);margin-top:4px;">写真と記録を見る・書く</div></div>
-          <div style="font-size:20px;color:var(--grape);">›</div>
-        </button>
-        <div class="home-title-wrap"><div class="home-main-title">じぃじのぶどう日記</div></div>
+        
+<div class="home-title-wrap"><div class="home-main-title">じぃじのぶどう日記</div></div>
         <button class="quick-toggle" id="quick-toggle" onclick="toggleQuickActions()"><span>クイックアクション</span><span class="quick-arrow">▼</span></button>
         <div class="home-four-grid" id="quick-actions-panel">
           <button class="card card-sm home-four-btn" onclick="navTo('diary')"><div class="q-title">ぶどう日記</div></button>
@@ -300,15 +323,33 @@ input[type="file"] { display: none; }
       </div>
     </div>
 
-    <div class="page" id="page-ai"><div class="section"><div class="section-title">🔬 AI病気・栄養診断</div><div class="upload-area" onclick="document.getElementById('ai-photo-input').click()" id="ai-upload-area"><div class="upload-icon">📷</div><div class="upload-text">写真を撮影 / アップロード</div><div class="upload-sub">葉・果実・幹の写真でAIが分析します</div></div><input type="file" id="ai-photo-input" accept="image/*" onchange="handleAIPhoto(this)"><div style="margin-top:14px;"><button class="btn btn-primary btn-full" onclick="runAIDiagnosis()" id="ai-diagnose-btn">🤖 AI診断スタート</button></div><div id="ai-result-area" style="display:none;margin-top:16px;"></div></div></div>
+    <div class="page" id="page-ai"><div class="section">
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">🔬 AI病気・栄養診断</div><div class="upload-area" onclick="document.getElementById('ai-photo-input').click()" id="ai-upload-area"><div class="upload-icon">📷</div><div class="upload-text">写真を撮影 / アップロード</div><div class="upload-sub">葉・果実・幹の写真でAIが分析します</div></div><input type="file" id="ai-photo-input" accept="image/*" onchange="handleAIPhoto(this)"><div style="margin-top:14px;"><button class="btn btn-primary btn-full" onclick="runAIDiagnosis()" id="ai-diagnose-btn">🤖 AI診断スタート</button></div><div id="ai-result-area" style="display:none;margin-top:16px;"></div></div></div>
 
-    <div class="page" id="page-voice"><div class="section"><div class="section-title">🎤 音声で質問・AIと会話</div><div class="card" style="text-align:center;padding:24px 16px;"><div style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">マイクボタンを押して話しかけてください</div><button class="voice-btn idle" id="voice-btn" onclick="toggleVoice()">🎤</button><div class="voice-wave" id="voice-wave" style="display:none;"><span></span><span></span><span></span><span></span><span></span></div><div style="font-size:12px;color:var(--text-mid);margin-top:12px;" id="voice-status">タップして録音開始</div><div style="margin-top:12px;"><div style="background:var(--cream);border-radius:var(--radius-sm);padding:10px 12px;min-height:48px;font-size:13px;color:var(--text);text-align:left;line-height:1.5;" id="voice-transcript">認識したテキストがここに表示されます</div></div></div><div class="section-title" style="margin-top:16px;">💬 チャット</div><div class="card" style="padding:0;overflow:hidden;"><div class="chat-container" id="chat-messages"><div class="chat-bubble ai">こんにちは！ぶどう栽培のことなら何でも聞いてください🍇</div></div><div class="chat-input-area"><textarea class="chat-input" placeholder="質問を入力..." id="chat-input" rows="1"></textarea><button class="chat-send" onclick="sendChat()">➤</button></div></div></div></div>
+    <div class="page" id="page-voice"><div class="section">
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">🎤 音声で質問・AIと会話</div><div class="card" style="text-align:center;padding:24px 16px;"><div style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">マイクボタンを押して話しかけてください</div><button class="voice-btn idle" id="voice-btn" onclick="toggleVoice()">🎤</button><div class="voice-wave" id="voice-wave" style="display:none;"><span></span><span></span><span></span><span></span><span></span></div><div style="font-size:12px;color:var(--text-mid);margin-top:12px;" id="voice-status">タップして録音開始</div><div style="margin-top:12px;"><div style="background:var(--cream);border-radius:var(--radius-sm);padding:10px 12px;min-height:48px;font-size:13px;color:var(--text);text-align:left;line-height:1.5;" id="voice-transcript">認識したテキストがここに表示されます</div></div></div><div class="section-title" style="margin-top:16px;">💬 チャット</div><div class="card" style="padding:0;overflow:hidden;"><div class="chat-container" id="chat-messages"><div class="chat-bubble ai">こんにちは！ぶどう栽培のことなら何でも聞いてください🍇</div></div><div class="chat-input-area"><textarea class="chat-input" placeholder="質問を入力..." id="chat-input" rows="1"></textarea><button class="chat-send" onclick="sendChat()">➤</button></div></div></div></div>
 
-    <div class="page" id="page-diary"><div class="section"><div class="section-title">📅 成長記録カレンダー</div><div class="calendar"><div class="cal-header"><button class="cal-nav" onclick="changeMonth(-1)">‹</button><div style="font-size:15px;font-weight:700;" id="cal-month-label"></div><button class="cal-nav" onclick="changeMonth(1)">›</button></div><div style="padding:8px 8px 4px;"><div class="cal-grid" id="cal-day-names"></div><div class="cal-grid" id="cal-days"></div></div></div><div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;"><div class="section-title" style="margin-bottom:0;" id="diary-date-title">今日の記録</div><button class="btn btn-leaf btn-sm" id="diary-add-btn" onclick="document.getElementById('diary-photo-input').click()">📸 追加</button></div><input type="file" id="diary-photo-input" accept="image/*" onchange="handleDiaryPhoto(this)"><div id="diary-entries" style="margin-top:12px;"></div></div></div>
+    <div class="page" id="page-diary"><div class="gdv">
+<button class="page-back-btn" onclick="navTo('home')">← 戻る</button>
+<div class="gdv-bar" id="gdv-bar"></div>
+<div class="gdv-top"><input type="month" id="gdv-month" class="gdv-month" onchange="gdvRender()"><button class="gdv-write" onclick="gdvOpen()">日記を書く</button></div>
+<div id="gdv-form" class="gdv-form">
+<label class="gdv-label">ぶどうの品種</label><input id="gdv-variety" class="gdv-input" readonly>
+<label class="gdv-label">タイトル</label><input id="gdv-title" class="gdv-input" placeholder="タイトル">
+<div class="gdv-row"><div><label class="gdv-label">日付</label><input type="date" id="gdv-date" class="gdv-input"></div><div><label class="gdv-label">写真</label><input type="file" id="gdv-file" accept="image/*" onchange="gdvPhoto(this)"></div></div>
+<img id="gdv-preview" class="gdv-preview" style="display:none">
+<label class="gdv-label">今日の様子</label><textarea id="gdv-note" class="gdv-text" placeholder="自由に記録"></textarea>
+<div class="gdv-row"><div><label class="gdv-label">粒の大きさ（mm）</label><input type="number" step="0.1" id="gdv-size" class="gdv-input"></div><div><label class="gdv-label">色</label><input id="gdv-color" class="gdv-input" placeholder="例：黄緑"></div></div>
+<button class="gdv-save" style="width:100%;margin-top:12px" onclick="gdvSave()">記録</button>
+<button id="gdv-delete" class="gdv-delete" style="display:none" onclick="gdvDelete()">この日記を削除</button>
+</div>
+<div id="gdv-heading" style="font-weight:700;margin:8px 0 10px"></div><div id="gdv-list"></div>
+</div></div>
+<div class="page" id="page-knowledge"><div class="section">
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">📚 ぶどう栽培 時期別豆知識</div><div class="season-tab"><button class="season-btn active-spring" onclick="showSeason('spring',this)">🌸 春（3〜5月）</button><button class="season-btn" onclick="showSeason('summer',this)">☀️ 夏（6〜8月）</button><button class="season-btn" onclick="showSeason('fall',this)">🍂 秋（9〜11月）</button><button class="season-btn" onclick="showSeason('winter',this)">❄️ 冬（12〜2月）</button></div><div id="season-content"></div></div></div>
 
-    <div class="page" id="page-knowledge"><div class="section"><div class="section-title">📚 ぶどう栽培 時期別豆知識</div><div class="season-tab"><button class="season-btn active-spring" onclick="showSeason('spring',this)">🌸 春（3〜5月）</button><button class="season-btn" onclick="showSeason('summer',this)">☀️ 夏（6〜8月）</button><button class="season-btn" onclick="showSeason('fall',this)">🍂 秋（9〜11月）</button><button class="season-btn" onclick="showSeason('winter',this)">❄️ 冬（12〜2月）</button></div><div id="season-content"></div></div></div>
-
-    <div class="page" id="page-settings"><div class="section"><div class="section-title">⚙️ アプリ設定</div><div class="card">
+    <div class="page" id="page-settings"><div class="section">
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">⚙️ アプリ設定</div><div class="card">
       <div class="setting-row"><div><div class="setting-label">📱 アプリ名</div><div class="setting-sub">ホーム画面のタイトル</div></div><input class="setting-input" id="app-name-input" value="ぶどう栽培日記" onchange="updateAppName(this.value)"></div>
       <div class="setting-row"><div><div class="setting-label">🍇 栽培品種</div></div><button class="btn btn-outline btn-sm" onclick="openVarietyModal()">変更</button></div>
       <div class="setting-row"><div><div class="setting-label">📅 栽培開始日</div></div><input type="date" class="setting-input" id="start-date-input" onchange="updateStartDate(this.value)"></div>
