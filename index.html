@@ -10,6 +10,27 @@
 <link rel="manifest" href="#" id="manifest-link">
 <title id="app-title">🍇 ぶどう栽培日記</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+function getFavoriteSites(){return JSON.parse(localStorage.getItem("grape_favorite_sites")||"[]")}
+function toggleFavoriteSiteForm(){document.getElementById("favorite-site-form")?.classList.toggle("open")}
+function renderFavoriteSites(){
+  const box=document.getElementById("favorite-sites-list"); if(!box)return;
+  const sites=getFavoriteSites();
+  box.innerHTML=sites.length?sites.map((s,i)=>`<div class="favorite-site-card"><a href="${escHtml(s.url)}" target="_blank" rel="noopener">${escHtml(s.name)} <span class="fav-arrow">↗</span></a><button class="favorite-delete-btn" onclick="deleteFavoriteSite(${i})">削除</button></div>`).join(""):`<div class="favorite-empty">お気に入りのサイトはまだありません</div>`;
+}
+function saveFavoriteSite(){
+  const n=document.getElementById("favorite-site-name"),u=document.getElementById("favorite-site-url");
+  let name=n.value.trim(),url=u.value.trim(); if(!name||!url){showToast("項目名とURLを入力してください");return}
+  if(!/^https?:\/\//i.test(url))url="https://"+url;
+  try{new URL(url)}catch(e){showToast("URLを確認してください");return}
+  const sites=getFavoriteSites();sites.push({name,url});localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));
+  n.value="";u.value="";document.getElementById("favorite-site-form").classList.remove("open");renderFavoriteSites();showToast("♡ お気に入りに追加しました")
+}
+function deleteFavoriteSite(i){
+  if(!confirm("このサイトを削除しますか？"))return;
+  const sites=getFavoriteSites();sites.splice(i,1);localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));renderFavoriteSites()
+}
+</script>
+<script>
 let gdvVariety=null,gdvEdit=null,gdvPhotoData="";
 function gdvInit(){state.gdvVarieties=state.gdvVarieties||[state.variety?.name||"シャインマスカット"];state.gdvEntries=state.gdvEntries||[];gdvVariety=gdvVariety||state.gdvVarieties[0];let m=document.getElementById("gdv-month");if(m&&!m.value)m.value=new Date().toISOString().slice(0,7);saveState();gdvRender()}
 function gdvRender(){if(!document.getElementById("gdv-bar"))return;if(!state.gdvVarieties)return gdvInit();document.getElementById("gdv-bar").innerHTML=state.gdvVarieties.map(v=>`<button class="gdv-chip ${v===gdvVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`).join("")+`<button class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;let mo=document.getElementById("gdv-month").value||new Date().toISOString().slice(0,7);let [y,m]=mo.split("-");document.getElementById("gdv-heading").textContent=`${+y}年${+m}月の記録`;let a=state.gdvEntries.filter(e=>e.variety===gdvVariety&&(e.date||"").slice(0,7)===mo).sort((a,b)=>(b.date||"").localeCompare(a.date||""));document.getElementById("gdv-list").innerHTML=a.length?a.map(e=>`<div class="gdv-card" onclick="gdvOpen('${e.id}')">${e.photo?`<img src="${e.photo}">`:""}<div class="gdv-body"><div class="gdv-meta"><span>🍇 ${escHtml(e.variety)}</span><span>${escHtml(e.date||"")}</span></div><div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>${e.note?`<div class="gdv-note">${escHtml(e.note)}</div>`:""}<div class="gdv-tags">${e.size?`<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>`:""}${e.color?`<span class="gdv-tag">色 ${escHtml(e.color)}</span>`:""}</div></div></div>`).join(""):`<div class="gdv-empty">この月の日記はまだありません 🍇</div>`}
@@ -329,6 +350,61 @@ body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN"
   font-weight:700 !important;
 }
 
+
+/* ===== 全画面：やさしい丸文字に統一 ===== */
+html, body, #app, #app *,
+button, input, textarea, select, option, a {
+  font-family:
+    "Hiragino Maru Gothic ProN",
+    "Hiragino Maru Gothic Pro",
+    "Yu Gothic",
+    "YuGothic",
+    "Meiryo",
+    sans-serif !important;
+}
+
+/* 見出しも丸く、少しやわらかい印象に */
+.section-title,
+.header-title,
+.know-title,
+.gdv-title,
+.setting-label,
+button {
+  font-weight: 700 !important;
+  letter-spacing: .025em;
+}
+
+/* 豆知識ページの項目タイトル：背景写真上でも読める白文字 */
+#page-knowledge > .section > .section-title {
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  text-shadow:
+    0 2px 5px rgba(0,0,0,.75),
+    0 0 10px rgba(0,0,0,.35) !important;
+  letter-spacing: .035em !important;
+}
+
+/* 季節カード内のタイトルは従来どおり濃色で読みやすく */
+#page-knowledge .know-title {
+  color: #1E1B4B !important;
+}
+
+
+.favorite-sites-wrap{margin-top:18px}
+.favorite-sites-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.favorite-sites-title{color:#fff;font-size:18px;font-weight:800;text-shadow:0 2px 5px rgba(0,0,0,.7)}
+.favorite-add-btn,.favorite-save-btn{border:0;border-radius:999px;background:rgba(255,255,255,.92);color:#5B21B6;padding:8px 15px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.favorite-site-form{display:none;background:rgba(255,255,255,.94);border-radius:16px;padding:14px;margin-bottom:12px}
+.favorite-site-form.open{display:block}
+.favorite-site-form label{display:block;font-size:12px;font-weight:700;color:#5B21B6;margin:7px 0 4px}
+.favorite-site-form input{display:block!important;width:100%;border:1px solid #ddd;border-radius:12px;padding:10px 12px;background:#fff;font-size:13px;margin-bottom:6px}
+.favorite-save-btn{width:100%;margin-top:8px;background:#7C3AED;color:#fff}
+.favorite-site-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.9);border-radius:15px;padding:11px 12px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.favorite-site-card a{flex:1;min-width:0;color:#1E1B4B;text-decoration:none;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.favorite-site-card .fav-arrow{color:#7C3AED}
+.favorite-delete-btn{border:0;background:transparent;color:#B91C1C;font-size:11px;font-weight:700;padding:5px}
+.favorite-empty{background:rgba(255,255,255,.78);border-radius:15px;padding:18px;text-align:center;color:#777;font-size:12px}
 </style>
 </head>
 <body>
@@ -392,7 +468,21 @@ body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN"
 <div id="gdv-heading" style="font-weight:700;margin:8px 0 10px"></div><div id="gdv-list"></div>
 </div></div>
 <div class="page" id="page-knowledge"><div class="section">
-        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">📚 ぶどう栽培 時期別豆知識</div><div class="season-tab"><button class="season-btn active-spring" onclick="showSeason('spring',this)">🌸 春（3〜5月）</button><button class="season-btn" onclick="showSeason('summer',this)">☀️ 夏（6〜8月）</button><button class="season-btn" onclick="showSeason('fall',this)">🍂 秋（9〜11月）</button><button class="season-btn" onclick="showSeason('winter',this)">❄️ 冬（12〜2月）</button></div><div id="season-content"></div></div></div>
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">📚 ぶどう栽培 時期別豆知識</div><div class="season-tab"><button class="season-btn active-spring" onclick="showSeason('spring',this)">🌸 春（3〜5月）</button><button class="season-btn" onclick="showSeason('summer',this)">☀️ 夏（6〜8月）</button><button class="season-btn" onclick="showSeason('fall',this)">🍂 秋（9〜11月）</button><button class="season-btn" onclick="showSeason('winter',this)">❄️ 冬（12〜2月）</button></div><div id="season-content"></div>
+        <div class="favorite-sites-wrap">
+          <div class="favorite-sites-head">
+            <div class="favorite-sites-title">♡ お気に入りのサイト</div>
+            <button class="favorite-add-btn" onclick="toggleFavoriteSiteForm()">＋追加</button>
+          </div>
+          <div id="favorite-site-form" class="favorite-site-form">
+            <label>項目名</label>
+            <input id="favorite-site-name" type="text" placeholder="例：ぶどう栽培情報">
+            <label>URL</label>
+            <input id="favorite-site-url" type="url" placeholder="https://...">
+            <button class="favorite-save-btn" onclick="saveFavoriteSite()">登録</button>
+          </div>
+          <div id="favorite-sites-list"></div>
+        </div></div></div>
 
     <div class="page" id="page-settings"><div class="section">
         <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">⚙️ アプリ設定</div><div class="card">
