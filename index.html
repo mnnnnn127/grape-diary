@@ -842,6 +842,15 @@ button {
   .vn-startext{font-size:17px}
 }
 
+
+/* ===== PDF export settings ===== */
+.pdf-export-card{background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.94);border-radius:25px;padding:18px;box-shadow:0 10px 28px rgba(28,35,25,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.pdf-export-title{font-size:20px;font-weight:900;color:#26372d}.pdf-export-sub{font-size:12px;color:#657269;line-height:1.65;margin:5px 0 14px}
+.pdf-export-btn{width:100%;display:grid;grid-template-columns:46px 1fr 20px;align-items:center;gap:10px;text-align:left;border:1px solid rgba(70,90,75,.10);border-radius:19px;background:rgba(255,255,255,.86);padding:13px;margin:9px 0;color:#26372d;box-shadow:0 5px 14px rgba(40,55,45,.07)}
+.pdf-export-icon{width:46px;height:46px;border-radius:15px;background:rgba(242,238,255,.95);display:flex;align-items:center;justify-content:center;font-size:24px}
+.pdf-export-btn b{display:block;font-size:15px}.pdf-export-btn small{display:block;font-size:11px;color:#778078;margin-top:2px}.pdf-export-arrow{font-size:27px;color:#7654d8}
+.pdf-export-help{font-size:10px;color:#788179;line-height:1.55;margin-top:11px}
+
 </style>
 </head>
 <body>
@@ -1049,7 +1058,11 @@ button {
       </div>
     </div>
 
-    <div class="page" id="page-settings"><div class="section">
+    <div class="page" id="page-settings">
+      <div class="section">
+        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button>
+        <div class="section-title" style="color:#fff;text-shadow:0 2px 9px rgba(0,0,0,.42);">⚙️ 設定</div>
+
         <div class="card" style="background:rgba(255,255,255,.84);border:1px solid rgba(255,255,255,.94);margin-bottom:14px;">
           <div style="font-size:17px;font-weight:900;margin-bottom:6px;">📷 じぃじのインスタ</div>
           <div style="font-size:12px;color:var(--text-mid);margin-bottom:9px;">InstagramのURLを自由に登録・変更できます。</div>
@@ -1057,13 +1070,23 @@ button {
           <button type="button" onclick="saveInstagramUrl()" style="width:100%;margin-top:9px;border:0;border-radius:15px;padding:11px;background:#7350d8;color:#fff;font-weight:900;">保存</button>
         </div>
 
-        <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">⚙️ アプリ設定</div><div class="card">
-      <div class="setting-row"><div><div class="setting-label">📱 アプリ名</div><div class="setting-sub">ホーム画面のタイトル</div></div><input class="setting-input" id="app-name-input" value="ぶどう栽培日記" onchange="updateAppName(this.value)"></div>
-      <div class="setting-row"><div><div class="setting-label">🍇 栽培品種</div></div><button class="btn btn-outline btn-sm" onclick="openVarietyModal()">変更</button></div>
-      <div class="setting-row"><div><div class="setting-label">📅 栽培開始日</div></div><input type="date" class="setting-input" id="start-date-input" onchange="updateStartDate(this.value)"></div>
-      <div class="setting-row"><div><div class="setting-label">🌱 成長ステージ</div></div><select class="setting-input" id="stage-select" onchange="updateStage(this.value)"><option>発芽期</option><option>展葉期</option><option>新梢伸長期</option><option>開花期</option><option>結実期</option><option>肥大期</option><option>着色期</option><option>収穫期</option><option>落葉休眠期</option></select></div>
-    </div><div class="section-title">📖 データ管理</div><div class="card"><div style="font-size:11px;line-height:1.6;color:#6B7280;margin-bottom:10px;">既存の日記データは削除せず引き継ぎます。更新前の状態は端末内に自動バックアップし、JSONバックアップの保存・復元もできます。</div><div class="setting-row"><div><div class="setting-label">💾 データをエクスポート</div></div><button class="btn btn-outline btn-sm" onclick="exportData()">保存</button></div><div class="setting-row"><div><div class="setting-label">📥 バックアップを復元</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('restore-input').click()">選択</button><input type="file" id="restore-input" accept="application/json" onchange="restoreData(this)" style="display:none"></div></div></div></div>
-  </div>
+        <div class="pdf-export-card">
+          <div class="pdf-export-title">📄 PDFをつくる</div>
+          <div class="pdf-export-sub">記録を、発表資料のような見やすい横型レイアウトにまとめます。</div>
+          <button type="button" class="pdf-export-btn" onclick="exportVarietyNotePDF()">
+            <span class="pdf-export-icon">🍇</span>
+            <span><b>ぶどう品種note</b><small>をPDFにする</small></span>
+            <span class="pdf-export-arrow">›</span>
+          </button>
+          <button type="button" class="pdf-export-btn" onclick="exportGrapeDiaryPDF()">
+            <span class="pdf-export-icon">📖</span>
+            <span><b>ぶどう日記</b><small>をPDFにする</small></span>
+            <span class="pdf-export-arrow">›</span>
+          </button>
+          <div class="pdf-export-help">PDF画面が開いたら「PDFを保存 / プリント」を選ぶと端末に保存できます。</div>
+        </div>
+      </div>
+    </div>
 
   <nav class="nav home-only-nav" style="display:none">
     <button class="nav-item active" onclick="navTo('home')" id="nav-home"><span>ホーム</span></button>
@@ -1320,6 +1343,70 @@ function openGrandpaInstagram(e){
 function renderInstagramSetting(){
   const el=document.getElementById("setting-instagram-url");
   if(el)el.value=state.instagramUrl||"";
+}
+
+
+/* ===== Presentation-style PDF export (browser print to PDF) ===== */
+function pdfEsc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]))}
+function pdfStars(n){n=Number(n)||0;return "★".repeat(n)+"☆".repeat(5-n)}
+function pdfOpen(title,slides){
+  const w=window.open("","_blank");
+  if(!w){showToast("PDF画面を開けません。ポップアップを許可してください");return}
+  const doc=`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${pdfEsc(title)}</title><style>
+  @page{size:A4 landscape;margin:0}*{box-sizing:border-box}body{margin:0;background:#e8ece8;font-family:"Hiragino Maru Gothic ProN","Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;color:#24342b}
+  .toolbar{position:sticky;top:0;z-index:5;padding:10px;text-align:center;background:rgba(35,48,39,.94)}
+  .toolbar button{border:0;border-radius:999px;padding:11px 22px;font-weight:800;font-size:14px;background:#fff;color:#33453a}
+  .slide{width:297mm;height:210mm;margin:10px auto;background:linear-gradient(135deg,#fbfcf7,#eef5e8);position:relative;overflow:hidden;padding:18mm 20mm;page-break-after:always}
+  .slide:before{content:"";position:absolute;width:105mm;height:105mm;border-radius:50%;right:-35mm;top:-40mm;background:rgba(150,190,120,.16)}
+  .slide:after{content:"";position:absolute;width:75mm;height:75mm;border-radius:50%;left:-30mm;bottom:-35mm;background:rgba(121,86,211,.09)}
+  .cover{display:flex;flex-direction:column;justify-content:center}.eyebrow{font-size:14px;letter-spacing:.16em;color:#6b7c70;font-weight:800}.cover h1{font-size:38px;margin:8px 0 10px;line-height:1.25}.cover p{font-size:17px;color:#6c776f}.accent{width:45mm;height:5px;border-radius:9px;background:#7754d8;margin-top:8px}
+  .slide h2{font-size:28px;margin:0 0 12mm;position:relative;z-index:1}.grid{display:grid;grid-template-columns:38% 1fr;gap:14mm;position:relative;z-index:1}.photos{display:grid;grid-template-columns:1fr 1fr;gap:5mm;align-content:start}.photos img{width:100%;height:58mm;object-fit:cover;border-radius:7mm;border:3mm solid rgba(255,255,255,.9);box-shadow:0 4mm 10mm rgba(30,45,35,.12)}.photos img:first-child:nth-last-child(1){grid-column:1/3;height:125mm}.photos img:first-child:nth-last-child(2),.photos img:first-child:nth-last-child(2)~img{grid-column:1/3;height:59mm}
+  .info{background:rgba(255,255,255,.72);border-radius:8mm;padding:9mm;box-shadow:0 4mm 12mm rgba(30,45,35,.08)}.feature{font-size:17px;line-height:1.8;margin-bottom:7mm;white-space:pre-wrap}.row{display:grid;grid-template-columns:34mm 1fr;gap:4mm;margin:4mm 0;font-size:16px;align-items:center}.row b{font-weight:900}.stars{font-size:22px;color:#9c7117;letter-spacing:1px}.memo{margin-top:7mm;padding-top:6mm;border-top:1px solid #dce4dc;font-size:15px;line-height:1.7;white-space:pre-wrap}
+  .diary-grid{display:grid;grid-template-columns:43% 1fr;gap:12mm;position:relative;z-index:1}.diary-photo img{width:100%;height:128mm;object-fit:cover;border-radius:8mm;border:3mm solid rgba(255,255,255,.9);box-shadow:0 4mm 10mm rgba(30,45,35,.12)}.diary-card{background:rgba(255,255,255,.76);border-radius:8mm;padding:10mm}.meta{font-size:14px;color:#6f7c73;margin-bottom:5mm}.diary-title{font-size:25px;font-weight:900;margin-bottom:6mm}.body{font-size:16px;line-height:1.85;white-space:pre-wrap}.chips{display:flex;gap:4mm;flex-wrap:wrap;margin-top:8mm}.chip{background:#f0ecfb;border-radius:999px;padding:3mm 5mm;font-size:14px}
+  .empty{height:120mm;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.65);border-radius:8mm;font-size:20px;color:#7b867e}
+  @media print{body{background:#fff}.toolbar{display:none}.slide{margin:0;box-shadow:none}}
+  </style></head><body><div class="toolbar"><button onclick="window.print()">PDFを保存 / プリント</button></div>${slides.join("")}</body></html>`;
+  w.document.open();w.document.write(doc);w.document.close();
+}
+function pdfCover(title,sub){
+  return `<section class="slide cover"><div class="eyebrow">JIJI'S GRAPE NOTE</div><h1>${pdfEsc(title)}</h1><p>${pdfEsc(sub)}</p><div class="accent"></div></section>`;
+}
+function exportVarietyNotePDF(){
+  const notes=Object.values(state.varietyNotes||{}).filter(Boolean);
+  const slides=[pdfCover("ぶどう品種note",`${notes.length}品種の栽培メモ・特徴をまとめました`)];
+  if(!notes.length){
+    slides.push(`<section class="slide"><h2>ぶどう品種note</h2><div class="empty">まだ登録された品種noteがありません</div></section>`);
+  }else notes.forEach(n=>{
+    const ps=(n.photos||[]).slice(0,3);
+    slides.push(`<section class="slide"><h2>🍇 ${pdfEsc(n.name||"ぶどう品種")}</h2><div class="grid">
+      <div class="photos">${ps.length?ps.map(p=>`<img src="${p}">`).join(""):`<div class="empty">写真なし</div>`}</div>
+      <div class="info"><div class="feature">${pdfEsc(n.feature||"特徴の記録はありません")}</div>
+      <div class="row"><b>甘味</b><span class="stars">${pdfStars(n.sweet)}</span></div>
+      <div class="row"><b>香り</b><span class="stars">${pdfStars(n.aroma)}</span></div>
+      <div class="row"><b>酸味</b><span class="stars">${pdfStars(n.acid)}</span></div>
+      <div class="row"><b>作りやすさ</b><span class="stars">${pdfStars(n.easy)}</span></div>
+      <div class="row"><b>一般価格</b><span>${n.price?Number(n.price).toLocaleString()+" 円":"-"}</span></div>
+      <div class="memo"><b>メモ</b><br>${pdfEsc(n.memo||"-")}</div></div></div></section>`);
+  });
+  pdfOpen("ぶどう品種note",slides);
+}
+function exportGrapeDiaryPDF(){
+  const entries=[...(state.gdvEntries||[])].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+  const slides=[pdfCover("じぃじのぶどう日記",`${entries.length}件の成長記録をまとめました`)];
+  if(!entries.length){
+    slides.push(`<section class="slide"><h2>ぶどう日記</h2><div class="empty">まだ日記がありません</div></section>`);
+  }else entries.forEach(e=>{
+    const photo=e.photo || (Array.isArray(e.legacyPhotos)?e.legacyPhotos[0]:"");
+    slides.push(`<section class="slide"><h2>📖 ${pdfEsc(e.variety||"ぶどう")}の記録</h2><div class="diary-grid">
+      <div class="diary-photo">${photo?`<img src="${photo}">`:`<div class="empty">写真なし</div>`}</div>
+      <div class="diary-card"><div class="meta">${pdfEsc(e.date||"日付未設定")} ・ ${pdfEsc(e.variety||"")}</div>
+      <div class="diary-title">${pdfEsc(e.title||"無題の記録")}</div>
+      <div class="body">${pdfEsc(e.note||e.body||e.condition||"")}</div>
+      <div class="chips">${e.size?`<span class="chip">粒 ${pdfEsc(e.size)}mm</span>`:""}${e.color?`<span class="chip">色 ${pdfEsc(e.color)}</span>`:""}</div>
+      </div></div></section>`);
+  });
+  pdfOpen("じぃじのぶどう日記",slides);
 }
 
 function navTo(p){
