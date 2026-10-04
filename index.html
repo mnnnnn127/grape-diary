@@ -646,6 +646,22 @@ button {
 
 
 .home-bottom-zone{display:flex;flex-direction:column;align-items:stretch;padding-bottom:12px}.home-pill{align-self:center;border:1.5px solid rgba(255,255,255,.95);border-radius:999px;background:rgba(255,255,255,.28);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);padding:9px 34px;font-weight:800;margin-bottom:10px}.grape-links-title{color:#fff!important;text-shadow:0 2px 5px rgba(0,0,0,.7)}
+
+/* HOME：HTML構造を壊さず、ぶどうリンクを可能な限り最下部へ */
+#page-home.active{
+  min-height:calc(100dvh - env(safe-area-inset-bottom));
+}
+#page-home.active > .section{
+  min-height:calc(100dvh - env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+}
+#page-home .home-bottom-zone{
+  margin-top:auto !important;
+  padding-top:24px;
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
+}
+
 </style>
 </head>
 <body>
@@ -668,7 +684,7 @@ button {
           <button class="card card-sm home-four-btn" onclick="navTo('knowledge')"><div class="q-title">栽培豆知識</div></button>
           <button class="card card-sm home-four-btn" onclick="navTo('settings')"><div class="q-title">設定</div></button>
         </div>
-        <div class="home-bottom-zone" style="margin-top:32vh;">
+        <div class="home-bottom-zone">
           
           <div class="section-title grape-links-title">ぶどうリンク</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
