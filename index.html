@@ -29,17 +29,210 @@ function deleteFavoriteSite(i){
   if(!confirm("このサイトを削除しますか？"))return;
   const sites=getFavoriteSites();sites.splice(i,1);localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));renderFavoriteSites()
 }
+
+/* ===== CANONICAL GRAPE DIARY — preserves existing state.gdvEntries / state.gdvVarieties ===== */
+let grapeDiarySelectedVariety = null;
+let grapeDiaryEditingId = null;
+let grapeDiaryPhotoData = "";
+
+function grapeDiaryEnsureData(){
+  // Never overwrite existing arrays. Only initialize when missing/corrupt.
+  if(!Array.isArray(state.gdvVarieties)){
+    const fallback = (state.variety && state.variety.name) ? state.variety.name : "シャインマスカット";
+    state.gdvVarieties = [fallback];
+  }
+  if(!Array.isArray(state.gdvEntries)) state.gdvEntries = [];
+
+  // Migration safety: recover varieties already present in old diary records.
+  state.gdvEntries.forEach(e=>{
+    if(e && e.variety && !state.gdvVarieties.includes(e.variety)) state.gdvVarieties.push(e.variety);
+  });
+  if(!state.gdvVarieties.length) state.gdvVarieties.push("シャインマスカット");
+  saveState();
+}
+
+function gdvInit(){
+  grapeDiaryEnsureData();
+  if(!grapeDiarySelectedVariety || !state.gdvVarieties.includes(grapeDiarySelectedVariety)){
+    grapeDiarySelectedVariety = state.gdvVarieties[0];
+  }
+  const month = document.getElementById("gdv-month");
+  if(month && !month.value) month.value = new Date().toISOString().slice(0,7);
+  gdvRender();
+}
+
+function gdvRender(){
+  grapeDiaryEnsureData();
+  const bar = document.getElementById("gdv-bar");
+  const list = document.getElementById("gdv-list");
+  const monthEl = document.getElementById("gdv-month");
+  if(!bar || !list || !monthEl) return;
+
+  if(!grapeDiarySelectedVariety || !state.gdvVarieties.includes(grapeDiarySelectedVariety)){
+    grapeDiarySelectedVariety = state.gdvVarieties[0];
+  }
+
+  bar.innerHTML = state.gdvVarieties.map(v =>
+    `<button type="button" class="gdv-chip ${v===grapeDiarySelectedVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`
+  ).join("") + `<button type="button" class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;
+
+  const mo = monthEl.value || new Date().toISOString().slice(0,7);
+  const parts = mo.split("-");
+  document.getElementById("gdv-heading").textContent = `${Number(parts[0])}年${Number(parts[1])}月の記録`;
+
+  const entries = state.gdvEntries
+    .filter(e => e && e.variety === grapeDiarySelectedVariety && String(e.date||"").slice(0,7) === mo)
+    .sort((a,b) => String(a.date||"").localeCompare(String(b.date||""))); // 日付順
+
+  list.innerHTML = entries.length ? entries.map(e => `
+    <article class="gdv-card" onclick="gdvOpen(${JSON.stringify(String(e.id))})">
+      ${e.photo ? `<img src="${e.photo}" alt="">` : `<div class="gdv-card-photo-empty">🍇</div>`}
+      <div class="gdv-body">
+        <div class="gdv-meta"><span>🍇 ${escHtml(e.variety||"")}</span><span>${escHtml(e.date||"")}</span></div>
+        <div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>
+        ${e.note ? `<div class="gdv-note">${escHtml(e.note)}</div>` : ""}
+        <div class="gdv-tags">
+          ${e.size ? `<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>` : ""}
+          ${e.color ? `<span class="gdv-tag">色 ${escHtml(e.color)}</span>` : ""}
+        </div>
+        <div style="font-size:10px;color:#8B5CF6;margin-top:8px;">タップして編集</div>
+      </div>
+    </article>`).join("") :
+    `<div class="gdv-empty">この月の日記はまだありません 🍇</div>`;
+}
+
+function gdvSelect(v){
+  grapeDiarySelectedVariety = v;
+  gdvClose();
+  gdvRender();
+}
+
+function gdvAdd(){
+  const v = prompt("追加するぶどうの品種名を入力してください");
+  if(!v || !v.trim()) return;
+  const name = v.trim();
+  grapeDiaryEnsureData();
+  if(!state.gdvVarieties.includes(name)) state.gdvVarieties.push(name);
+  grapeDiarySelectedVariety = name;
+  saveState();
+  gdvRender();
+  showToast("🍇 品種を追加しました");
+}
+
+function gdvOpen(id=null){
+  grapeDiaryEnsureData();
+  const form = document.getElementById("gdv-form");
+  if(!form) return;
+
+  grapeDiaryEditingId = id ? String(id) : null;
+  let e = null;
+  if(grapeDiaryEditingId){
+    e = state.gdvEntries.find(x => String(x.id) === grapeDiaryEditingId) || null;
+  }
+
+  if(e){
+    grapeDiarySelectedVariety = e.variety || grapeDiarySelectedVariety;
+    grapeDiaryPhotoData = e.photo || "";
+  }else{
+    grapeDiaryPhotoData = "";
+  }
+
+  document.getElementById("gdv-form-title").textContent = e ? "ぶどう日記を編集" : "ぶどう日記を書く";
+  document.getElementById("gdv-variety").value = grapeDiarySelectedVariety || "";
+  document.getElementById("gdv-title").value = e?.title || "";
+  document.getElementById("gdv-date").value = e?.date || new Date().toISOString().slice(0,10);
+  document.getElementById("gdv-note").value = e?.note || "";
+  document.getElementById("gdv-size").value = e?.size || "";
+  document.getElementById("gdv-color").value = e?.color || "";
+  document.getElementById("gdv-file").value = "";
+
+  const preview = document.getElementById("gdv-preview");
+  preview.src = grapeDiaryPhotoData || "";
+  preview.style.display = grapeDiaryPhotoData ? "block" : "none";
+  document.getElementById("gdv-delete").style.display = e ? "block" : "none";
+
+  form.classList.add("on");
+  setTimeout(()=>form.scrollIntoView({behavior:"smooth",block:"start"}),30);
+}
+
+function gdvClose(){
+  const form = document.getElementById("gdv-form");
+  if(form) form.classList.remove("on");
+  grapeDiaryEditingId = null;
+  grapeDiaryPhotoData = "";
+}
+
+function gdvPhoto(input){
+  if(!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = ev => {
+    grapeDiaryPhotoData = ev.target.result;
+    const p = document.getElementById("gdv-preview");
+    p.src = grapeDiaryPhotoData;
+    p.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+function gdvSave(){
+  grapeDiaryEnsureData();
+
+  const date = document.getElementById("gdv-date").value || new Date().toISOString().slice(0,10);
+  const record = {
+    id: grapeDiaryEditingId || ("g" + Date.now()),
+    variety: grapeDiarySelectedVariety || state.gdvVarieties[0],
+    title: document.getElementById("gdv-title").value.trim(),
+    date: date,
+    note: document.getElementById("gdv-note").value,
+    size: document.getElementById("gdv-size").value,
+    color: document.getElementById("gdv-color").value.trim(),
+    photo: grapeDiaryPhotoData || ""
+  };
+
+  if(grapeDiaryEditingId){
+    const idx = state.gdvEntries.findIndex(x => String(x.id) === String(grapeDiaryEditingId));
+    if(idx >= 0){
+      // Update only this record; never replace the whole diary collection.
+      state.gdvEntries[idx] = {...state.gdvEntries[idx], ...record};
+    }else{
+      state.gdvEntries.push(record);
+    }
+  }else{
+    state.gdvEntries.push(record);
+  }
+
+  saveState();
+  document.getElementById("gdv-month").value = date.slice(0,7);
+  gdvClose();
+  gdvRender();
+  showToast("🍇 日記を保存しました");
+}
+
+function gdvDelete(){
+  if(!grapeDiaryEditingId) return;
+  if(!confirm("この日記を削除しますか？")) return;
+
+  // Delete exactly one matching record only.
+  const idx = state.gdvEntries.findIndex(x => String(x.id) === String(grapeDiaryEditingId));
+  if(idx >= 0) state.gdvEntries.splice(idx,1);
+  saveState();
+  gdvClose();
+  gdvRender();
+  showToast("日記を削除しました");
+}
+
 </script>
 <script>
 let gdvVariety=null,gdvEdit=null,gdvPhotoData="";
-function gdvInit(){state.gdvVarieties=state.gdvVarieties||[state.variety?.name||"シャインマスカット"];state.gdvEntries=state.gdvEntries||[];gdvVariety=gdvVariety||state.gdvVarieties[0];let m=document.getElementById("gdv-month");if(m&&!m.value)m.value=new Date().toISOString().slice(0,7);saveState();gdvRender()}
-function gdvRender(){if(!document.getElementById("gdv-bar"))return;if(!state.gdvVarieties)return gdvInit();document.getElementById("gdv-bar").innerHTML=state.gdvVarieties.map(v=>`<button class="gdv-chip ${v===gdvVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`).join("")+`<button class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;let mo=document.getElementById("gdv-month").value||new Date().toISOString().slice(0,7);let [y,m]=mo.split("-");document.getElementById("gdv-heading").textContent=`${+y}年${+m}月の記録`;let a=state.gdvEntries.filter(e=>e.variety===gdvVariety&&(e.date||"").slice(0,7)===mo).sort((a,b)=>(b.date||"").localeCompare(a.date||""));document.getElementById("gdv-list").innerHTML=a.length?a.map(e=>`<div class="gdv-card" onclick="gdvOpen('${e.id}')">${e.photo?`<img src="${e.photo}">`:""}<div class="gdv-body"><div class="gdv-meta"><span>🍇 ${escHtml(e.variety)}</span><span>${escHtml(e.date||"")}</span></div><div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>${e.note?`<div class="gdv-note">${escHtml(e.note)}</div>`:""}<div class="gdv-tags">${e.size?`<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>`:""}${e.color?`<span class="gdv-tag">色 ${escHtml(e.color)}</span>`:""}</div></div></div>`).join(""):`<div class="gdv-empty">この月の日記はまだありません 🍇</div>`}
-function gdvSelect(v){gdvVariety=v;gdvRender()}
-function gdvAdd(){let v=prompt("追加するぶどうの品種名");if(!v||!v.trim())return;v=v.trim();if(!state.gdvVarieties.includes(v))state.gdvVarieties.push(v);gdvVariety=v;saveState();gdvRender()}
-function gdvOpen(id=null){gdvEdit=id;gdvPhotoData="";let e=id?state.gdvEntries.find(x=>x.id===id):null;if(e){gdvVariety=e.variety;gdvPhotoData=e.photo||""}document.getElementById("gdv-variety").value=gdvVariety||"";document.getElementById("gdv-title").value=e?.title||"";document.getElementById("gdv-date").value=e?.date||new Date().toISOString().slice(0,10);document.getElementById("gdv-note").value=e?.note||"";document.getElementById("gdv-size").value=e?.size||"";document.getElementById("gdv-color").value=e?.color||"";let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display=gdvPhotoData?"block":"none";document.getElementById("gdv-delete").style.display=id?"block":"none";document.getElementById("gdv-form").classList.add("on")}
-function gdvPhoto(i){if(!i.files[0])return;let r=new FileReader();r.onload=e=>{gdvPhotoData=e.target.result;let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display="block"};r.readAsDataURL(i.files[0])}
-function gdvSave(){let date=document.getElementById("gdv-date").value||new Date().toISOString().slice(0,10),o={id:gdvEdit||"g"+Date.now(),variety:gdvVariety||"",title:document.getElementById("gdv-title").value,date,note:document.getElementById("gdv-note").value,size:document.getElementById("gdv-size").value,color:document.getElementById("gdv-color").value,photo:gdvPhotoData};if(gdvEdit){let i=state.gdvEntries.findIndex(x=>x.id===gdvEdit);if(i>=0)state.gdvEntries[i]=o}else state.gdvEntries.push(o);saveState();document.getElementById("gdv-month").value=date.slice(0,7);document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("🍇 日記を記録しました")}
-function gdvDelete(){if(!gdvEdit||!confirm("この日記を削除しますか？"))return;state.gdvEntries=state.gdvEntries.filter(x=>x.id!==gdvEdit);saveState();document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("日記を削除しました")}
+function old_gdvInit_disabled(){state.gdvVarieties=state.gdvVarieties||[state.variety?.name||"シャインマスカット"];state.gdvEntries=state.gdvEntries||[];gdvVariety=gdvVariety||state.gdvVarieties[0];let m=document.getElementById("gdv-month");if(m&&!m.value)m.value=new Date().toISOString().slice(0,7);saveState();gdvRender()}
+function old_gdvRender_disabled(){if(!document.getElementById("gdv-bar"))return;if(!state.gdvVarieties)return gdvInit();document.getElementById("gdv-bar").innerHTML=state.gdvVarieties.map(v=>`<button class="gdv-chip ${v===gdvVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`).join("")+`<button class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;let mo=document.getElementById("gdv-month").value||new Date().toISOString().slice(0,7);let [y,m]=mo.split("-");document.getElementById("gdv-heading").textContent=`${+y}年${+m}月の記録`;let a=state.gdvEntries.filter(e=>e.variety===gdvVariety&&(e.date||"").slice(0,7)===mo).sort((a,b)=>(b.date||"").localeCompare(a.date||""));document.getElementById("gdv-list").innerHTML=a.length?a.map(e=>`<div class="gdv-card" onclick="gdvOpen('${e.id}')">${e.photo?`<img src="${e.photo}">`:""}<div class="gdv-body"><div class="gdv-meta"><span>🍇 ${escHtml(e.variety)}</span><span>${escHtml(e.date||"")}</span></div><div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>${e.note?`<div class="gdv-note">${escHtml(e.note)}</div>`:""}<div class="gdv-tags">${e.size?`<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>`:""}${e.color?`<span class="gdv-tag">色 ${escHtml(e.color)}</span>`:""}</div></div></div>`).join(""):`<div class="gdv-empty">この月の日記はまだありません 🍇</div>`}
+function old_gdvSelect_disabled(v){gdvVariety=v;gdvRender()}
+function old_gdvAdd_disabled(){let v=prompt("追加するぶどうの品種名");if(!v||!v.trim())return;v=v.trim();if(!state.gdvVarieties.includes(v))state.gdvVarieties.push(v);gdvVariety=v;saveState();gdvRender()}
+function old_gdvOpen_disabled(id=null){gdvEdit=id;gdvPhotoData="";let e=id?state.gdvEntries.find(x=>x.id===id):null;if(e){gdvVariety=e.variety;gdvPhotoData=e.photo||""}document.getElementById("gdv-variety").value=gdvVariety||"";document.getElementById("gdv-title").value=e?.title||"";document.getElementById("gdv-date").value=e?.date||new Date().toISOString().slice(0,10);document.getElementById("gdv-note").value=e?.note||"";document.getElementById("gdv-size").value=e?.size||"";document.getElementById("gdv-color").value=e?.color||"";let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display=gdvPhotoData?"block":"none";document.getElementById("gdv-delete").style.display=id?"block":"none";document.getElementById("gdv-form").classList.add("on")}
+function old_gdvPhoto_disabled(i){if(!i.files[0])return;let r=new FileReader();r.onload=e=>{gdvPhotoData=e.target.result;let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display="block"};r.readAsDataURL(i.files[0])}
+function old_gdvSave_disabled(){let date=document.getElementById("gdv-date").value||new Date().toISOString().slice(0,10),o={id:gdvEdit||"g"+Date.now(),variety:gdvVariety||"",title:document.getElementById("gdv-title").value,date,note:document.getElementById("gdv-note").value,size:document.getElementById("gdv-size").value,color:document.getElementById("gdv-color").value,photo:gdvPhotoData};if(gdvEdit){let i=state.gdvEntries.findIndex(x=>x.id===gdvEdit);if(i>=0)state.gdvEntries[i]=o}else state.gdvEntries.push(o);saveState();document.getElementById("gdv-month").value=date.slice(0,7);document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("🍇 日記を記録しました")}
+function old_gdvDelete_disabled(){if(!gdvEdit||!confirm("この日記を削除しますか？"))return;state.gdvEntries=state.gdvEntries.filter(x=>x.id!==gdvEdit);saveState();document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("日記を削除しました")}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -405,6 +598,15 @@ button {
 .favorite-site-card .fav-arrow{color:#7C3AED}
 .favorite-delete-btn{border:0;background:transparent;color:#B91C1C;font-size:11px;font-weight:700;padding:5px}
 .favorite-empty{background:rgba(255,255,255,.78);border-radius:15px;padding:18px;text-align:center;color:#777;font-size:12px}
+
+/* ===== ぶどう日記 v2：データを壊さず使えるUI ===== */
+.gdv-photo-pick{display:flex;align-items:center;justify-content:center;width:100%;min-height:42px;border:1px solid #ddd;border-radius:13px;background:#fff;color:#5B21B6;font-size:13px;font-weight:800;cursor:pointer}
+.gdv-cancel{width:100%;margin-top:8px;border:0;border-radius:999px;padding:9px;background:rgba(255,255,255,.75);color:#666;font-weight:700}
+.gdv-card{cursor:pointer}
+.gdv-card:active{transform:scale(.99)}
+.gdv-card-photo-empty{height:90px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);font-size:30px}
+.gdv-empty{background:rgba(255,255,255,.82)}
+
 </style>
 </head>
 <body>
@@ -451,22 +653,63 @@ button {
     <div class="page" id="page-voice"><div class="section">
         <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">🎤 音声で質問・AIと会話</div><div class="card" style="text-align:center;padding:24px 16px;"><div style="font-size:13px;color:var(--text-mid);margin-bottom:16px;">マイクボタンを押して話しかけてください</div><button class="voice-btn idle" id="voice-btn" onclick="toggleVoice()">🎤</button><div class="voice-wave" id="voice-wave" style="display:none;"><span></span><span></span><span></span><span></span><span></span></div><div style="font-size:12px;color:var(--text-mid);margin-top:12px;" id="voice-status">タップして録音開始</div><div style="margin-top:12px;"><div style="background:var(--cream);border-radius:var(--radius-sm);padding:10px 12px;min-height:48px;font-size:13px;color:var(--text);text-align:left;line-height:1.5;" id="voice-transcript">認識したテキストがここに表示されます</div></div></div><div class="section-title" style="margin-top:16px;">💬 チャット</div><div class="card" style="padding:0;overflow:hidden;"><div class="chat-container" id="chat-messages"><div class="chat-bubble ai">こんにちは！ぶどう栽培のことなら何でも聞いてください🍇</div></div><div class="chat-input-area"><textarea class="chat-input" placeholder="質問を入力..." id="chat-input" rows="1"></textarea><button class="chat-send" onclick="sendChat()">➤</button></div></div></div></div>
 
-    <div class="page" id="page-diary"><div class="gdv">
-<button class="page-back-btn" onclick="navTo('home')">← 戻る</button>
-<div class="gdv-bar" id="gdv-bar"></div>
-<div class="gdv-top"><input type="month" id="gdv-month" class="gdv-month" onchange="gdvRender()"><button class="gdv-write" onclick="gdvOpen()">日記を書く</button></div>
-<div id="gdv-form" class="gdv-form">
-<label class="gdv-label">ぶどうの品種</label><input id="gdv-variety" class="gdv-input" readonly>
-<label class="gdv-label">タイトル</label><input id="gdv-title" class="gdv-input" placeholder="タイトル">
-<div class="gdv-row"><div><label class="gdv-label">日付</label><input type="date" id="gdv-date" class="gdv-input"></div><div><label class="gdv-label">写真</label><input type="file" id="gdv-file" accept="image/*" onchange="gdvPhoto(this)"></div></div>
-<img id="gdv-preview" class="gdv-preview" style="display:none">
-<label class="gdv-label">今日の様子</label><textarea id="gdv-note" class="gdv-text" placeholder="自由に記録"></textarea>
-<div class="gdv-row"><div><label class="gdv-label">粒の大きさ（mm）</label><input type="number" step="0.1" id="gdv-size" class="gdv-input"></div><div><label class="gdv-label">色</label><input id="gdv-color" class="gdv-input" placeholder="例：黄緑"></div></div>
-<button class="gdv-save" style="width:100%;margin-top:12px" onclick="gdvSave()">記録</button>
-<button id="gdv-delete" class="gdv-delete" style="display:none" onclick="gdvDelete()">この日記を削除</button>
+    <div class="page" id="page-diary">
+  <div class="gdv">
+    <button class="page-back-btn" onclick="navTo('home')">← 戻る</button>
+
+    <div class="gdv-bar" id="gdv-bar"></div>
+
+    <div class="gdv-top">
+      <input type="month" id="gdv-month" class="gdv-month" onchange="gdvRender()">
+      <button type="button" class="gdv-write" onclick="gdvOpen()">日記を書く</button>
+    </div>
+
+    <div id="gdv-form" class="gdv-form">
+      <div style="font-size:17px;font-weight:800;color:#5B21B6;margin-bottom:6px;" id="gdv-form-title">ぶどう日記を書く</div>
+
+      <label class="gdv-label">ぶどうの品種</label>
+      <input id="gdv-variety" class="gdv-input" readonly>
+
+      <label class="gdv-label">タイトル</label>
+      <input id="gdv-title" class="gdv-input" placeholder="例：少しずつ色づいてきた">
+
+      <div class="gdv-row">
+        <div>
+          <label class="gdv-label">日付</label>
+          <input type="date" id="gdv-date" class="gdv-input">
+        </div>
+        <div>
+          <label class="gdv-label">写真</label>
+          <label for="gdv-file" class="gdv-photo-pick">写真を選ぶ</label>
+          <input type="file" id="gdv-file" accept="image/*" onchange="gdvPhoto(this)" style="display:none">
+        </div>
+      </div>
+
+      <img id="gdv-preview" class="gdv-preview" style="display:none">
+
+      <label class="gdv-label">今日の様子</label>
+      <textarea id="gdv-note" class="gdv-text" placeholder="自由に記録できます"></textarea>
+
+      <div class="gdv-row">
+        <div>
+          <label class="gdv-label">粒の大きさ（mm）</label>
+          <input type="number" inputmode="decimal" step="0.1" id="gdv-size" class="gdv-input" placeholder="例：18">
+        </div>
+        <div>
+          <label class="gdv-label">色</label>
+          <input id="gdv-color" class="gdv-input" placeholder="例：黄緑、紫">
+        </div>
+      </div>
+
+      <button type="button" class="gdv-save" style="width:100%;margin-top:12px" onclick="gdvSave()">記録</button>
+      <button type="button" id="gdv-delete" class="gdv-delete" style="display:none" onclick="gdvDelete()">この日記を削除</button>
+      <button type="button" class="gdv-cancel" onclick="gdvClose()">閉じる</button>
+    </div>
+
+    <div id="gdv-heading" style="font-weight:800;margin:12px 0 10px;color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.65)"></div>
+    <div id="gdv-list"></div>
+  </div>
 </div>
-<div id="gdv-heading" style="font-weight:700;margin:8px 0 10px"></div><div id="gdv-list"></div>
-</div></div>
 <div class="page" id="page-knowledge"><div class="section">
         <button class="page-back-btn" onclick="navTo('home')">← 戻る</button><div class="section-title">📚 ぶどう栽培 時期別豆知識</div><div class="season-tab"><button class="season-btn active-spring" onclick="showSeason('spring',this)">🌸 春（3〜5月）</button><button class="season-btn" onclick="showSeason('summer',this)">☀️ 夏（6〜8月）</button><button class="season-btn" onclick="showSeason('fall',this)">🍂 秋（9〜11月）</button><button class="season-btn" onclick="showSeason('winter',this)">❄️ 冬（12〜2月）</button></div><div id="season-content"></div>
         <div class="favorite-sites-wrap">
