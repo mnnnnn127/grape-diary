@@ -242,10 +242,16 @@ input[type="file"] { display: none; }
 .home-main-title{display:inline-block;font-family:"Hiragino Maru Gothic ProN","Yu Gothic","Hiragino Sans",sans-serif;font-size:29px;font-weight:800;letter-spacing:.08em;color:white;text-shadow:0 2px 8px rgba(0,0,0,.65);background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:10px 22px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
 .home-diary-card{width:100%;border:1px solid rgba(255,255,255,.92);background:rgba(255,255,255,.80);border-radius:var(--radius);padding:15px 16px;margin-bottom:18px;box-shadow:0 3px 12px rgba(0,0,0,.10);text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:var(--text);}
 .home-diary-card:active{transform:scale(.99)}
-.quick-toggle{width:100%;border:0;background:transparent;color:white;text-shadow:0 1px 4px rgba(0,0,0,.75);font-size:16px;font-weight:800;text-align:left;padding:8px 2px 10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.quick-toggle{width:100%;border:0;background:transparent;color:white;text-shadow:0 1px 4px rgba(0,0,0,.75);font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:18px;font-weight:700;letter-spacing:.06em;text-align:left;padding:8px 2px 10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
 .quick-arrow{transition:transform .25s ease;font-size:13px}.quick-toggle.open .quick-arrow{transform:rotate(180deg)}
 #quick-actions-panel{display:none;overflow:hidden}#quick-actions-panel.open{display:grid;animation:quickOpen .2s ease-out}@keyframes quickOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
+
+/* simplified controls */
+.quick-toggle{font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:19px;font-weight:800;letter-spacing:.08em;}
+.home-four-btn .q-title{font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:12px;}
+.home-only-nav{background:transparent!important;border-top:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+.home-only-nav .nav-item{background:transparent!important;color:white!important;font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Yu Gothic",sans-serif;font-size:13px;font-weight:800;text-shadow:0 1px 5px rgba(0,0,0,.85);padding:12px 4px calc(10px + env(safe-area-inset-bottom));}
 </style>
 </head>
 <body>
@@ -269,12 +275,12 @@ input[type="file"] { display: none; }
           <div style="font-size:20px;color:var(--grape);">›</div>
         </button>
         <div class="home-title-wrap"><div class="home-main-title">じぃじのぶどう日記</div></div>
-        <button class="quick-toggle" id="quick-toggle" onclick="toggleQuickActions()"><span>⚡ クイックアクション</span><span class="quick-arrow">▼</span></button>
+        <button class="quick-toggle" id="quick-toggle" onclick="toggleQuickActions()"><span>クイックアクション</span><span class="quick-arrow">▼</span></button>
         <div class="home-four-grid" id="quick-actions-panel">
-          <button class="card card-sm home-four-btn" onclick="navTo('diary');setTimeout(()=>document.getElementById('diary-add-btn').click(),100)"><div class="q-icon">📸</div><div class="q-title">記録を追加</div></button>
-          <button class="card card-sm home-four-btn" onclick="navTo('ai')"><div class="q-icon">🔬</div><div class="q-title">AI病気診断</div></button>
-          <button class="card card-sm home-four-btn" onclick="navTo('voice')"><div class="q-icon">🎤</div><div class="q-title">音声で質問</div></button>
-          <button class="card card-sm home-four-btn" onclick="navTo('knowledge')"><div class="q-icon">📚</div><div class="q-title">栽培豆知識</div></button>
+          <button class="card card-sm home-four-btn" onclick="navTo('diary')"><div class="q-title">ぶどう日記</div></button>
+          <button class="card card-sm home-four-btn" onclick="navTo('ai')"><div class="q-title">病気診断</div></button>
+          <button class="card card-sm home-four-btn" onclick="navTo('knowledge')"><div class="q-title">栽培豆知識</div></button>
+          <button class="card card-sm home-four-btn" onclick="navTo('settings')"><div class="q-title">設定</div></button>
         </div>
         <div style="margin-top:32vh;">
           <div class="section-title">🔗 ぶどうリンク</div>
@@ -310,13 +316,8 @@ input[type="file"] { display: none; }
     </div><div class="section-title">📖 データ管理</div><div class="card"><div class="setting-row"><div><div class="setting-label">💾 データをエクスポート</div></div><button class="btn btn-outline btn-sm" onclick="exportData()">保存</button></div><div class="setting-row"><div><div class="setting-label">🗑️ データをリセット</div></div><button class="btn btn-sm" onclick="resetData()">リセット</button></div></div></div></div>
   </div>
 
-  <nav class="nav">
-    <button class="nav-item active" onclick="navTo('home')" id="nav-home"><span class="nav-icon">🏠</span><span>ホーム</span></button>
-    <button class="nav-item" onclick="navTo('ai')" id="nav-ai"><span class="nav-icon">🔬</span><span>AI診断</span></button>
-    <button class="nav-item" onclick="navTo('voice')" id="nav-voice"><span class="nav-icon">🎤</span><span>音声</span></button>
-    <button class="nav-item" onclick="navTo('diary')" id="nav-diary"><span class="nav-icon">📅</span><span>日記</span></button>
-    <button class="nav-item" onclick="navTo('knowledge')" id="nav-knowledge"><span class="nav-icon">📚</span><span>豆知識</span></button>
-    <button class="nav-item" onclick="navTo('settings')" id="nav-settings"><span class="nav-icon">⚙️</span><span>設定</span></button>
+  <nav class="nav home-only-nav">
+    <button class="nav-item active" onclick="navTo('home')" id="nav-home"><span>ホーム</span></button>
   </nav>
 </div>
 
@@ -335,7 +336,7 @@ const VARIETIES=[
 {id:'neomuscate',emoji:'🌿',name:'ネオマスカット',desc:'甘みが強く栽培しやすい'}
 ];
 const SEASON_DATA={
-spring:{tasks:[{emoji:'🌱',title:'萌芽・展葉管理',content:'芽が出始めたら不要な芽は早めに除去し、主枝・亜主枝を確認して誘引します。',tip:'💡 芽かきは天気のいい日に。'}],link:'https://www.pref.yamanashi.jp/engei-skjsyk/budou.html',linkText:'山梨県ぶどう栽培情報'},
+spring:{tasks:[{emoji:'🌱',title:'萌芽・展葉管理',content:'芽が出始めたら不要な芽は早めに除去し、主枝・亜主枝を確認して誘引します。',tip:'💡 芽かきは天気のいい日に。'}],link:'https://ouchi-gohan.jp/4352/',linkText:'旬のぶどう｜品種・味わい豆知識'},
 summer:{tasks:[{emoji:'🍇',title:'摘粒・房管理',content:'果粒が大きくなったら摘粒を行い、房形を整えます。',tip:'💡 摘粒は数回に分けて。'}],link:'https://www.naro.go.jp/laboratory/fruit/team/grape.html',linkText:'農研機構ぶどう情報'},
 fall:{tasks:[{emoji:'🍂',title:'収穫とお礼肥',content:'糖度や着色を確認して収穫し、収穫後は翌年に向けて施肥します。',tip:'💡 収穫後の管理も大切です。'}],link:'https://www.maff.go.jp/j/seisan/engei/kajyu/',linkText:'農林水産省果樹情報'},
 winter:{tasks:[{emoji:'✂️',title:'冬季剪定',content:'完全落葉後に枝を整理し、翌年の結果枝を整えます。',tip:'💡 剪定鋏は清潔に。'}],link:'https://www.maff.go.jp/j/seisan/engei/kajyu/',linkText:'農林水産省果樹情報'}
@@ -356,7 +357,7 @@ function updateTodayDate(){const d=new Date(),days=['日','月','火','水','木
 function updateVarietyDisplay(){document.getElementById('variety-display').textContent=`${state.variety.emoji} ${state.variety.name} ▾`;}
 function updateStats(){const d=document.getElementById('diary-count');if(d)d.textContent=Object.keys(state.diaryEntries).length;const a=document.getElementById('ai-count');if(a)a.textContent=state.aiCount;const days=document.getElementById('days-count');if(days){const st=new Date(state.startDate);days.textContent=Math.max(1,Math.floor((Date.now()-st)/86400000)+1);}const g=document.getElementById('growth-stage-label');if(g)g.textContent=state.stage;}
 function toggleQuickActions(){const p=document.getElementById('quick-actions-panel');const b=document.getElementById('quick-toggle');if(!p||!b)return;p.classList.toggle('open');b.classList.toggle('open');}
-function navTo(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');document.getElementById('nav-'+p).classList.add('active');if(p==='diary')renderCalendar();if(p==='home')updateStats();document.querySelector('.content').scrollTo(0,0);}
+function navTo(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');document.getElementById('nav-'+p)?.classList.add('active');if(p==='diary')renderCalendar();if(p==='home')updateStats();document.querySelector('.content').scrollTo(0,0);}
 function openVarietyModal(){document.getElementById('variety-modal').classList.add('open');}
 function closeVarietyModal(){document.getElementById('variety-modal').classList.remove('open');}
 function renderVarietyList(){document.getElementById('variety-list').innerHTML=VARIETIES.map(v=>`<div class="variety-item ${v.id===state.variety.id?'selected':''}" onclick="selectVariety('${v.id}')"><div class="variety-emoji">${v.emoji}</div><div><div class="variety-name">${v.name}</div><div class="variety-desc">${v.desc}</div></div></div>`).join('');}
