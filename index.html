@@ -9,7 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="ぶどう日記">
 <link rel="manifest" href="#" id="manifest-link">
 <title id="app-title">🍇 ぶどう栽培日記</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
 function getFavoriteSites(){return JSON.parse(localStorage.getItem("grape_favorite_sites")||"[]")}
 function toggleFavoriteSiteForm(){document.getElementById("favorite-site-form")?.classList.toggle("open")}
 function renderFavoriteSites(){
@@ -172,7 +173,7 @@ function gdvOpen(id=null){
   }
 
   document.getElementById("gdv-form-title").textContent = e ? "ぶどう日記を編集" : "ぶどう日記を書く";
-  document.getElementById("gdv-variety").value = grapeDiarySelectedVariety || "";
+  document.getElementById("gdv-variety").value = grapeDiarySelectedVariety || state.gdvVarieties[0] || "";
   document.getElementById("gdv-title").value = e?.title || "";
   document.getElementById("gdv-date").value = e?.date || new Date().toISOString().slice(0,10);
   document.getElementById("gdv-note").value = e?.note || "";
@@ -221,7 +222,7 @@ function gdvSave(){
     note: document.getElementById("gdv-note").value,
     size: document.getElementById("gdv-size").value,
     color: document.getElementById("gdv-color").value.trim(),
-    photo: grapeDiaryPhotoData || "",
+    photo: grapeDiaryPhotoData || (grapeDiaryEditingId ? (state.gdvEntries.find(x=>String(x.id)===String(grapeDiaryEditingId))?.photo || "") : ""),
     ...(grapeDiaryEditingId ? (state.gdvEntries.find(x=>String(x.id)===String(grapeDiaryEditingId))?.legacyPhotos ? {legacyPhotos:state.gdvEntries.find(x=>String(x.id)===String(grapeDiaryEditingId)).legacyPhotos} : {}) : {})
   };
 
@@ -257,18 +258,6 @@ function gdvDelete(){
   showToast("日記を削除しました");
 }
 
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const writeBtn=document.querySelector("#page-diary .gdv-write");
-  if(writeBtn){
-    writeBtn.onclick=function(ev){
-      ev.preventDefault();
-      ev.stopPropagation();
-      gdvOpen();
-      return false;
-    };
-  }
-});
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
