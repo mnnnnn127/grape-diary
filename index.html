@@ -294,6 +294,41 @@ body,button,input,textarea,select,option{font-family:"Hiragino Maru Gothic ProN"
   text-shadow:0 2px 8px rgba(255,255,255,.75),0 1px 2px rgba(70,40,80,.16);
 }
 
+
+/* トップ画面：ぶどうリンクをできるだけ下へ */
+#page-home{
+  min-height: calc(100vh - 76px);
+}
+#page-home .section{
+  min-height: calc(100vh - 92px);
+  display:flex;
+  flex-direction:column;
+}
+/* GRAPE BASE / Instagram などトップ下部リンク群 */
+#page-home .grape-links,
+#page-home .grape-link-area,
+#page-home .bottom-links{
+  margin-top:auto !important;
+  padding-top:22px !important;
+  padding-bottom:8px !important;
+}
+
+/* 最下部の「ホーム」だけを、やさしい角丸枠に */
+#nav-home{
+  flex:0 0 auto !important;
+  width:auto !important;
+  margin:7px auto calc(7px + env(safe-area-inset-bottom)) !important;
+  padding:8px 28px !important;
+  border:1.5px solid rgba(255,255,255,.9) !important;
+  border-radius:999px !important;
+  background:rgba(255,255,255,.20) !important;
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+}
+#nav-home span:last-child{
+  font-weight:700 !important;
+}
+
 </style>
 </head>
 <body>
