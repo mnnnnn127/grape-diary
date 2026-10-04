@@ -22,12 +22,24 @@ function saveFavoriteSite(){
   let name=n.value.trim(),url=u.value.trim(); if(!name||!url){showToast("項目名とURLを入力してください");return}
   if(!/^https?:\/\//i.test(url))url="https://"+url;
   try{new URL(url)}catch(e){showToast("URLを確認してください");return}
-  const sites=getFavoriteSites();sites.push({name,url});localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));
+  const sites=getFavoriteSites();sites.push({name,url});
+  try{
+    const old=localStorage.getItem("grape_favorite_sites");
+    if(old)localStorage.setItem("grape_favorite_sites_backup_auto",old);
+    localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));
+  }catch(e){showToast("⚠️ 保存できませんでした。既存データは削除していません");return;}
   n.value="";u.value="";document.getElementById("favorite-site-form").classList.remove("open");renderFavoriteSites();showToast("♡ お気に入りに追加しました")
 }
 function deleteFavoriteSite(i){
   if(!confirm("このサイトを削除しますか？"))return;
-  const sites=getFavoriteSites();sites.splice(i,1);localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));renderFavoriteSites()
+  const sites=getFavoriteSites();
+  try{
+    const old=localStorage.getItem("grape_favorite_sites");
+    if(old)localStorage.setItem("grape_favorite_sites_backup_auto",old);
+    sites.splice(i,1);
+    localStorage.setItem("grape_favorite_sites",JSON.stringify(sites));
+    renderFavoriteSites();
+  }catch(e){showToast("⚠️ 削除処理に失敗しました。既存データは保持しています");}
 }
 
 /* ===== CANONICAL GRAPE DIARY — preserves existing state.gdvEntries / state.gdvVarieties ===== */
@@ -42,6 +54,28 @@ function grapeDiaryEnsureData(){
     state.gdvVarieties = [fallback];
   }
   if(!Array.isArray(state.gdvEntries)) state.gdvEntries = [];
+
+  // Legacy migration: copy old calendar diary records into the new diary exactly once.
+  // The old state.diaryEntries object itself is NOT deleted or modified.
+  if(state.diaryEntries && typeof state.diaryEntries==="object" && !Array.isArray(state.diaryEntries)){
+    Object.entries(state.diaryEntries).forEach(([date,old])=>{
+      const legacyId="legacy-"+date;
+      if(!state.gdvEntries.some(e=>String(e.id)===legacyId)){
+        const photos=Array.isArray(old?.photos)?old.photos:[];
+        state.gdvEntries.push({
+          id:legacyId,
+          variety:(state.variety&&state.variety.name)||state.gdvVarieties[0]||"シャインマスカット",
+          title:"ぶどうの記録",
+          date:date,
+          note:old?.notes||"",
+          size:"",
+          color:"",
+          photo:photos[0]||"",
+          legacyPhotos:photos
+        });
+      }
+    });
+  }
 
   // Migration safety: recover varieties already present in old diary records.
   state.gdvEntries.forEach(e=>{
@@ -187,7 +221,8 @@ function gdvSave(){
     note: document.getElementById("gdv-note").value,
     size: document.getElementById("gdv-size").value,
     color: document.getElementById("gdv-color").value.trim(),
-    photo: grapeDiaryPhotoData || ""
+    photo: grapeDiaryPhotoData || "",
+    ...(grapeDiaryEditingId ? (state.gdvEntries.find(x=>String(x.id)===String(grapeDiaryEditingId))?.legacyPhotos ? {legacyPhotos:state.gdvEntries.find(x=>String(x.id)===String(grapeDiaryEditingId)).legacyPhotos} : {}) : {})
   };
 
   if(grapeDiaryEditingId){
@@ -222,17 +257,19 @@ function gdvDelete(){
   showToast("日記を削除しました");
 }
 
-</script>
-<script>
-let gdvVariety=null,gdvEdit=null,gdvPhotoData="";
-function old_gdvInit_disabled(){state.gdvVarieties=state.gdvVarieties||[state.variety?.name||"シャインマスカット"];state.gdvEntries=state.gdvEntries||[];gdvVariety=gdvVariety||state.gdvVarieties[0];let m=document.getElementById("gdv-month");if(m&&!m.value)m.value=new Date().toISOString().slice(0,7);saveState();gdvRender()}
-function old_gdvRender_disabled(){if(!document.getElementById("gdv-bar"))return;if(!state.gdvVarieties)return gdvInit();document.getElementById("gdv-bar").innerHTML=state.gdvVarieties.map(v=>`<button class="gdv-chip ${v===gdvVariety?'on':''}" onclick='gdvSelect(${JSON.stringify(v)})'>${escHtml(v)}</button>`).join("")+`<button class="gdv-chip" onclick="gdvAdd()">＋追加</button>`;let mo=document.getElementById("gdv-month").value||new Date().toISOString().slice(0,7);let [y,m]=mo.split("-");document.getElementById("gdv-heading").textContent=`${+y}年${+m}月の記録`;let a=state.gdvEntries.filter(e=>e.variety===gdvVariety&&(e.date||"").slice(0,7)===mo).sort((a,b)=>(b.date||"").localeCompare(a.date||""));document.getElementById("gdv-list").innerHTML=a.length?a.map(e=>`<div class="gdv-card" onclick="gdvOpen('${e.id}')">${e.photo?`<img src="${e.photo}">`:""}<div class="gdv-body"><div class="gdv-meta"><span>🍇 ${escHtml(e.variety)}</span><span>${escHtml(e.date||"")}</span></div><div class="gdv-title">${escHtml(e.title||"ぶどうの記録")}</div>${e.note?`<div class="gdv-note">${escHtml(e.note)}</div>`:""}<div class="gdv-tags">${e.size?`<span class="gdv-tag">粒 ${escHtml(String(e.size))}mm</span>`:""}${e.color?`<span class="gdv-tag">色 ${escHtml(e.color)}</span>`:""}</div></div></div>`).join(""):`<div class="gdv-empty">この月の日記はまだありません 🍇</div>`}
-function old_gdvSelect_disabled(v){gdvVariety=v;gdvRender()}
-function old_gdvAdd_disabled(){let v=prompt("追加するぶどうの品種名");if(!v||!v.trim())return;v=v.trim();if(!state.gdvVarieties.includes(v))state.gdvVarieties.push(v);gdvVariety=v;saveState();gdvRender()}
-function old_gdvOpen_disabled(id=null){gdvEdit=id;gdvPhotoData="";let e=id?state.gdvEntries.find(x=>x.id===id):null;if(e){gdvVariety=e.variety;gdvPhotoData=e.photo||""}document.getElementById("gdv-variety").value=gdvVariety||"";document.getElementById("gdv-title").value=e?.title||"";document.getElementById("gdv-date").value=e?.date||new Date().toISOString().slice(0,10);document.getElementById("gdv-note").value=e?.note||"";document.getElementById("gdv-size").value=e?.size||"";document.getElementById("gdv-color").value=e?.color||"";let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display=gdvPhotoData?"block":"none";document.getElementById("gdv-delete").style.display=id?"block":"none";document.getElementById("gdv-form").classList.add("on")}
-function old_gdvPhoto_disabled(i){if(!i.files[0])return;let r=new FileReader();r.onload=e=>{gdvPhotoData=e.target.result;let p=document.getElementById("gdv-preview");p.src=gdvPhotoData;p.style.display="block"};r.readAsDataURL(i.files[0])}
-function old_gdvSave_disabled(){let date=document.getElementById("gdv-date").value||new Date().toISOString().slice(0,10),o={id:gdvEdit||"g"+Date.now(),variety:gdvVariety||"",title:document.getElementById("gdv-title").value,date,note:document.getElementById("gdv-note").value,size:document.getElementById("gdv-size").value,color:document.getElementById("gdv-color").value,photo:gdvPhotoData};if(gdvEdit){let i=state.gdvEntries.findIndex(x=>x.id===gdvEdit);if(i>=0)state.gdvEntries[i]=o}else state.gdvEntries.push(o);saveState();document.getElementById("gdv-month").value=date.slice(0,7);document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("🍇 日記を記録しました")}
-function old_gdvDelete_disabled(){if(!gdvEdit||!confirm("この日記を削除しますか？"))return;state.gdvEntries=state.gdvEntries.filter(x=>x.id!==gdvEdit);saveState();document.getElementById("gdv-form").classList.remove("on");gdvEdit=null;gdvRender();showToast("日記を削除しました")}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const writeBtn=document.querySelector("#page-diary .gdv-write");
+  if(writeBtn){
+    writeBtn.onclick=function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      gdvOpen();
+      return false;
+    };
+  }
+});
+
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -607,11 +644,13 @@ button {
 .gdv-card-photo-empty{height:90px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);font-size:30px}
 .gdv-empty{background:rgba(255,255,255,.82)}
 
+
+.home-bottom-zone{display:flex;flex-direction:column;align-items:stretch;padding-bottom:12px}.home-pill{align-self:center;border:1.5px solid rgba(255,255,255,.95);border-radius:999px;background:rgba(255,255,255,.28);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);padding:9px 34px;font-weight:800;margin-bottom:10px}.grape-links-title{color:#fff!important;text-shadow:0 2px 5px rgba(0,0,0,.7)}
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="header">
+  <div class="header" style="display:none">
     <div class="header-top">
       <div><div class="header-title" id="app-display-title">🍇 ぶどう栽培日記</div><div class="header-sub" id="today-date"></div></div>
       <button class="header-variety" onclick="openVarietyModal()"><span id="variety-display">🍇 シャインマスカット ▾</span></button>
@@ -621,7 +660,7 @@ button {
     <div class="page active" id="page-home">
       <div class="section">
         
-<div class="home-title-wrap"><div class="home-main-title" class="jiji-cute-title">じぃじのぶどう日記</div></div>
+<div class="home-title-wrap"><div class="home-main-title jiji-cute-title">じぃじのぶどう日記</div></div>
         <button class="quick-toggle" id="quick-toggle" onclick="toggleQuickActions()"><span>クイックアクション</span><span class="quick-arrow">▼</span></button>
         <div class="home-four-grid" id="quick-actions-panel">
           <button class="card card-sm home-four-btn" onclick="navTo('diary')"><div class="q-title">ぶどう日記</div></button>
@@ -629,8 +668,9 @@ button {
           <button class="card card-sm home-four-btn" onclick="navTo('knowledge')"><div class="q-title">栽培豆知識</div></button>
           <button class="card card-sm home-four-btn" onclick="navTo('settings')"><div class="q-title">設定</div></button>
         </div>
-        <div style="margin-top:32vh;">
-          <div class="section-title">🔗 ぶどうリンク</div>
+        <div class="home-bottom-zone" style="margin-top:32vh;">
+          
+          <div class="section-title grape-links-title">ぶどうリンク</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
           <a href="https://grape-base.co.jp/" target="_blank" rel="noopener noreferrer" class="card card-sm" style="text-decoration:none;color:var(--text);margin-bottom:0;text-align:center;padding:16px 10px;background:rgba(255,255,255,.80);border-color:rgba(255,255,255,.92);">
             <div style="width:58px;height:58px;margin:0 auto 8px;border-radius:50%;background:white;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:34px;line-height:1;">🍇</div>
@@ -733,10 +773,10 @@ button {
       <div class="setting-row"><div><div class="setting-label">🍇 栽培品種</div></div><button class="btn btn-outline btn-sm" onclick="openVarietyModal()">変更</button></div>
       <div class="setting-row"><div><div class="setting-label">📅 栽培開始日</div></div><input type="date" class="setting-input" id="start-date-input" onchange="updateStartDate(this.value)"></div>
       <div class="setting-row"><div><div class="setting-label">🌱 成長ステージ</div></div><select class="setting-input" id="stage-select" onchange="updateStage(this.value)"><option>発芽期</option><option>展葉期</option><option>新梢伸長期</option><option>開花期</option><option>結実期</option><option>肥大期</option><option>着色期</option><option>収穫期</option><option>落葉休眠期</option></select></div>
-    </div><div class="section-title">📖 データ管理</div><div class="card"><div class="setting-row"><div><div class="setting-label">💾 データをエクスポート</div></div><button class="btn btn-outline btn-sm" onclick="exportData()">保存</button></div><div class="setting-row"><div><div class="setting-label">🗑️ データをリセット</div></div><button class="btn btn-sm" onclick="resetData()">リセット</button></div></div></div></div>
+    </div><div class="section-title">📖 データ管理</div><div class="card"><div style="font-size:11px;line-height:1.6;color:#6B7280;margin-bottom:10px;">既存の日記データは削除せず引き継ぎます。更新前の状態は端末内に自動バックアップし、JSONバックアップの保存・復元もできます。</div><div class="setting-row"><div><div class="setting-label">💾 データをエクスポート</div></div><button class="btn btn-outline btn-sm" onclick="exportData()">保存</button></div><div class="setting-row"><div><div class="setting-label">📥 バックアップを復元</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('restore-input').click()">選択</button><input type="file" id="restore-input" accept="application/json" onchange="restoreData(this)" style="display:none"></div></div></div></div>
   </div>
 
-  <nav class="nav home-only-nav">
+  <nav class="nav home-only-nav" style="display:none">
     <button class="nav-item active" onclick="navTo('home')" id="nav-home"><span>ホーム</span></button>
   </nav>
 </div>
@@ -756,13 +796,16 @@ const VARIETIES=[
 {id:'neomuscate',emoji:'🌿',name:'ネオマスカット',desc:'甘みが強く栽培しやすい'}
 ];
 const SEASON_DATA={
-spring:{tasks:[{emoji:'🌱',title:'萌芽・展葉管理',content:'芽が出始めたら不要な芽は早めに除去し、主枝・亜主枝を確認して誘引します。',tip:'💡 芽かきは天気のいい日に。'}],link:'https://ouchi-gohan.jp/4352/',linkText:'旬のぶどう｜品種・味わい豆知識'},
-summer:{tasks:[{emoji:'🍇',title:'摘粒・房管理',content:'果粒が大きくなったら摘粒を行い、房形を整えます。',tip:'💡 摘粒は数回に分けて。'}],link:'https://www.naro.go.jp/laboratory/fruit/team/grape.html',linkText:'農研機構ぶどう情報'},
-fall:{tasks:[{emoji:'🍂',title:'収穫とお礼肥',content:'糖度や着色を確認して収穫し、収穫後は翌年に向けて施肥します。',tip:'💡 収穫後の管理も大切です。'}],link:'https://www.maff.go.jp/j/seisan/engei/kajyu/',linkText:'農林水産省果樹情報'},
-winter:{tasks:[{emoji:'✂️',title:'冬季剪定',content:'完全落葉後に枝を整理し、翌年の結果枝を整えます。',tip:'💡 剪定鋏は清潔に。'}],link:'https://www.maff.go.jp/j/seisan/engei/kajyu/',linkText:'農林水産省果樹情報'}
+spring:{tasks:[{emoji:'🌱',title:'萌芽・展葉管理',content:'芽が出始めたら不要な芽は早めに除去し、主枝・亜主枝を確認して誘引します。',tip:'💡 芽かきは天気のいい日に。'}]},
+summer:{tasks:[{emoji:'🍇',title:'摘粒・房管理',content:'果粒が大きくなったら摘粒を行い、房形を整えます。',tip:'💡 摘粒は数回に分けて。'}]},
+fall:{tasks:[{emoji:'🍂',title:'収穫とお礼肥',content:'糖度や着色を確認して収穫し、収穫後は翌年に向けて施肥します。',tip:'💡 収穫後の管理も大切です。'}]},
+winter:{tasks:[{emoji:'✂️',title:'冬季剪定',content:'完全落葉後に枝を整理し、翌年の結果枝を整えます。',tip:'💡 剪定鋏は清潔に。'}]}
 };
 const DAILY_TIPS=['今日は葉の色をチェックしましょう🌿','雨の後は葉の裏側も確認しましょう','今日の天気を記録すると来年の栽培計画に役立ちます📝'];
-let state=JSON.parse(localStorage.getItem('grape_app_state')||'{}');
+let state={};
+try{state=JSON.parse(localStorage.getItem('grape_app_state')||'{}')||{};}catch(e){
+  try{state=JSON.parse(localStorage.getItem('grape_app_state_backup_auto')||'{}')||{};}catch(_){state={};}
+}
 if(!state.appName)state.appName='ぶどう栽培日記';
 if(!state.variety)state.variety=VARIETIES[0];
 if(!state.diaryEntries)state.diaryEntries={};
@@ -770,14 +813,45 @@ if(!state.aiCount)state.aiCount=0;
 if(!state.startDate)state.startDate=new Date().toISOString().split('T')[0];
 if(!state.stage)state.stage='萌芽期';
 let calendarDate=new Date(),selectedCalDate=null,voiceRecognition=null,isRecording=false,aiPhotoData=null;
-function saveState(){localStorage.setItem('grape_app_state',JSON.stringify(state));}
-window.onload=()=>{updateAppTitle();updateTodayDate();updateVarietyDisplay();renderVarietyList();renderCalendar();showSeason('spring',document.querySelector('.season-btn'));updateStats();document.getElementById('today-tip').textContent=DAILY_TIPS[Math.floor(Math.random()*DAILY_TIPS.length)];document.getElementById('start-date-input').value=state.startDate;document.getElementById('stage-select').value=state.stage;initVoice();};
-function updateAppTitle(){document.getElementById('app-display-title').textContent='🍇 '+state.appName;document.title='🍇 '+state.appName;document.getElementById('app-name-input').value=state.appName;}
-function updateTodayDate(){const d=new Date(),days=['日','月','火','水','木','金','土'];document.getElementById('today-date').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;}
-function updateVarietyDisplay(){document.getElementById('variety-display').textContent=`${state.variety.emoji} ${state.variety.name} ▾`;}
+function saveState(){
+  try{
+    const current=localStorage.getItem('grape_app_state');
+    if(current) localStorage.setItem('grape_app_state_backup_auto',current);
+    localStorage.setItem('grape_app_state',JSON.stringify(state));
+    return true;
+  }catch(e){
+    console.error('保存エラー',e);
+    showToast('⚠️ 保存容量が不足しています。既存データは削除していません');
+    return false;
+  }
+}
+window.onload=()=>{
+  updateAppTitle();
+  updateTodayDate();
+  updateVarietyDisplay();
+  renderVarietyList();
+  showSeason('spring',document.querySelector('.season-btn'));
+  updateStats();
+  const sd=document.getElementById('start-date-input'); if(sd) sd.value=state.startDate;
+  const ss=document.getElementById('stage-select'); if(ss) ss.value=state.stage;
+  renderFavoriteSites();
+};
+function updateAppTitle(){const a=document.getElementById('app-display-title');if(a)a.textContent='🍇 '+state.appName;document.title='🍇 '+state.appName;const i=document.getElementById('app-name-input');if(i)i.value=state.appName;}
+function updateTodayDate(){const el=document.getElementById('today-date');if(!el)return;const d=new Date(),days=['日','月','火','水','木','金','土'];el.textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;}
+function updateVarietyDisplay(){const el=document.getElementById('variety-display');if(el)el.textContent=`${state.variety.emoji} ${state.variety.name} ▾`;}
 function updateStats(){const d=document.getElementById('diary-count');if(d)d.textContent=Object.keys(state.diaryEntries).length;const a=document.getElementById('ai-count');if(a)a.textContent=state.aiCount;const days=document.getElementById('days-count');if(days){const st=new Date(state.startDate);days.textContent=Math.max(1,Math.floor((Date.now()-st)/86400000)+1);}const g=document.getElementById('growth-stage-label');if(g)g.textContent=state.stage;}
 function toggleQuickActions(){const p=document.getElementById('quick-actions-panel');const b=document.getElementById('quick-toggle');if(!p||!b)return;p.classList.toggle('open');b.classList.toggle('open');}
-function navTo(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');document.getElementById('nav-'+p)?.classList.add('active');if(p==='diary')renderCalendar();if(p==='home')updateStats();document.querySelector('.content').scrollTo(0,0);}
+function navTo(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const page=document.getElementById('page-'+p);
+  if(page) page.classList.add('active');
+  document.getElementById('nav-'+p)?.classList.add('active');
+  if(p==='diary') setTimeout(gdvInit,0);
+  if(p==='knowledge') setTimeout(renderFavoriteSites,0);
+  if(p==='home') updateStats();
+  document.querySelector('.content')?.scrollTo(0,0);
+}
 function openVarietyModal(){document.getElementById('variety-modal').classList.add('open');}
 function closeVarietyModal(){document.getElementById('variety-modal').classList.remove('open');}
 function renderVarietyList(){document.getElementById('variety-list').innerHTML=VARIETIES.map(v=>`<div class="variety-item ${v.id===state.variety.id?'selected':''}" onclick="selectVariety('${v.id}')"><div class="variety-emoji">${v.emoji}</div><div><div class="variety-name">${v.name}</div><div class="variety-desc">${v.desc}</div></div></div>`).join('');}
@@ -797,11 +871,12 @@ function startVoice(){if(!voiceRecognition){showToast('このブラウザは音�
 function stopVoice(){isRecording=false;document.getElementById('voice-btn').className='voice-btn idle';document.getElementById('voice-wave').style.display='none';try{voiceRecognition?.stop();}catch(e){}}
 function sendChat(){const i=document.getElementById('chat-input'),t=i.value.trim();if(!t)return;document.getElementById('chat-messages').innerHTML+=`<div class="chat-bubble user">${escHtml(t)}</div><div class="chat-bubble ai">現在この静的版のAIチャットは未接続です。日記・写真・栽培記録は利用できます。</div>`;i.value='';}
 function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function showSeason(s,b){document.querySelectorAll('.season-btn').forEach(x=>x.className='season-btn');if(b)b.classList.add('active-'+s);const d=SEASON_DATA[s];document.getElementById('season-content').innerHTML=d.tasks.map(t=>`<div class="know-card"><div class="know-img">${t.emoji}</div><div class="know-body"><div class="know-title">${t.title}</div><div class="know-text">${t.content}</div><div class="know-text" style="margin-top:8px;">${t.tip}</div></div></div>`).join('')+`<div class="card"><a class="know-link" href="${d.link}" target="_blank">📡 ${d.linkText} ↗</a></div>`;}
+function showSeason(s,b){document.querySelectorAll('.season-btn').forEach(x=>x.className='season-btn');if(b)b.classList.add('active-'+s);const d=SEASON_DATA[s];document.getElementById('season-content').innerHTML=d.tasks.map(t=>`<div class="know-card"><div class="know-img">${t.emoji}</div><div class="know-body"><div class="know-title">${t.title}</div><div class="know-text">${t.content}</div><div class="know-text" style="margin-top:8px;">${t.tip}</div></div></div>`).join('');}
 function updateAppName(v){state.appName=v||'ぶどう栽培日記';saveState();updateAppTitle();}
 function updateStartDate(v){state.startDate=v;saveState();updateStats();}
 function updateStage(v){state.stage=v;saveState();updateStats();}
-function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='grape-diary-backup.json';a.click();}
+function exportData(){const pack={version:2,grape_app_state:state,grape_favorite_sites:getFavoriteSites(),exportedAt:new Date().toISOString()};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,2)],{type:'application/json'}));a.download='grape-diary-backup.json';a.click();showToast('💾 バックアップを保存しました');}
+function restoreData(input){if(!input.files?.[0])return;const r=new FileReader();r.onload=e=>{try{const x=JSON.parse(e.target.result);const restored=x.grape_app_state||x;if(!restored||typeof restored!=='object')throw 0;if(!confirm('バックアップから復元しますか？現在のデータは自動退避してから復元します。'))return;const cur=localStorage.getItem('grape_app_state');if(cur)localStorage.setItem('grape_app_state_backup_auto',cur);localStorage.setItem('grape_app_state',JSON.stringify(restored));if(Array.isArray(x.grape_favorite_sites))localStorage.setItem('grape_favorite_sites',JSON.stringify(x.grape_favorite_sites));location.reload();}catch(err){showToast('❌ バックアップファイルを確認してください');}};r.readAsText(input.files[0]);}
 function resetData(){if(confirm('全データを削除しますか？')){localStorage.removeItem('grape_app_state');location.reload();}}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 </script>
