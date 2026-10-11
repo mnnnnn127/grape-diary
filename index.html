@@ -1438,17 +1438,41 @@ function pdfOpen(title,slides,pageMode="portrait"){
   .diary-mini-meta{order:0;display:flex;justify-content:space-between;align-items:center;gap:2mm;font-size:9px;color:#916c47;overflow-wrap:anywhere}
   .variety-pill{background:#ecf5df;border:1px solid #cfe2b8;border-radius:20px;padding:1mm 2mm;color:#567137;text-align:center}
   .diary-mini-title{order:1;font-size:14px;font-weight:900;line-height:1.4;color:#503164;overflow-wrap:anywhere}
-  .diary-mini-photo{order:2;flex:1;min-height:10mm;width:100%;background:#fcf8ef;border:1px solid #f0ebe1;border-radius:2mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#a3929c;font-size:10px}
-  .diary-mini-photo img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+  .diary-mini-photo{position:relative;order:2;flex:1 1 0;min-height:10mm;width:100%;background:#fcf8ef;border:1px solid #f0ebe1;border-radius:2mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#a3929c;font-size:10px}
+  .diary-mini-photo img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;object-position:center}
   .diary-mini-text{order:3;flex:0 0 auto;max-height:30%;border-top:1px dashed #ecdfcc;padding-top:1.5mm;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden}
   .diary-mini-tags,.note-mini-stars{order:4;font-size:9px;color:#957230;line-height:1.4}
   .diary-sheet.dense .diary-mini{padding:2mm;gap:1mm}.dense .diary-mini-title{font-size:11px}.dense .diary-mini-text{font-size:9px}.dense .diary-mini-meta{font-size:8px}
   @media print{body{background:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar{display:none}.diary-sheet{margin:0;box-shadow:none;break-after:page;page-break-after:always}.diary-sheet:last-child{break-after:auto;page-break-after:auto}}
   </style></head><body>
-  <div class="toolbar"><button type="button" class="back-btn" onclick="if(window.opener&&!window.opener.closed){window.opener.focus()}window.close()">← 設定に戻る</button><button type="button" onclick="window.print()">🖨 印刷 / PDF保存</button><button type="button" class="image-btn" onclick="downloadSheets()">🖼 画像としてダウンロード</button><div class="print-help">A4・縦向きで印刷。背景のグラフィックをオン、ヘッダーとフッターをオフにしてください。文章が長い場合は配置枚数を減らしてください。</div><div id="image-status"></div></div>
+  <div class="toolbar"><button type="button" class="back-btn" onclick="if(window.opener&&!window.opener.closed){window.opener.focus()}window.close()">← 設定に戻る</button><button type="button" onclick="printSheets()">🖨 印刷 / PDF保存</button><button type="button" class="image-btn" onclick="downloadSheets()">🖼 画像としてダウンロード</button><div class="print-help">A4・縦向きで印刷。背景のグラフィックをオン、ヘッダーとフッターをオフにしてください。文章が長い場合は配置枚数を減らしてください。</div><div id="image-status"></div></div>
   ${slides.join("")}
   <script>
+  function fitPrintPhotos(){
+    document.querySelectorAll('.diary-mini-photo img').forEach(img=>{
+      const frame=img.parentElement;
+      if(!img.naturalWidth||!img.naturalHeight)return;
+      const scale=Math.min(frame.clientWidth/img.naturalWidth,frame.clientHeight/img.naturalHeight);
+      if(scale<=0)return;
+      img.style.width=(img.naturalWidth*scale)+'px';
+      img.style.height=(img.naturalHeight*scale)+'px';
+    });
+  }
+  async function waitPrintPhotos(){
+    await Promise.all([...document.images].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
+    fitPrintPhotos();
+  }
+  async function printSheets(){await waitPrintPhotos();window.print();}
+  document.querySelectorAll('.diary-mini-photo img').forEach(img=>img.addEventListener('load',fitPrintPhotos));
+  if(typeof ResizeObserver!=='undefined'){
+    const observer=new ResizeObserver(fitPrintPhotos);
+    document.querySelectorAll('.diary-mini-photo').forEach(frame=>observer.observe(frame));
+  }
+  window.addEventListener('beforeprint',fitPrintPhotos);
+  window.addEventListener('afterprint',fitPrintPhotos);
+  window.addEventListener('load',fitPrintPhotos);
   async function downloadSheets(){
+    await waitPrintPhotos();
     const status=document.getElementById('image-status');
     if(typeof html2canvas!=='function'){status.textContent='画像作成ライブラリを読み込めません。通信環境を確認してください。';return}
     const sheets=[...document.querySelectorAll('.diary-sheet')];
