@@ -1145,7 +1145,12 @@ button {
           </button>
           <div id="pdf-select-panel" class="pdf-select-panel" style="display:none" aria-label="PDFにする記録を選択">
             <div class="pdf-select-head"><b id="pdf-select-title">記録を選択</b><button type="button" onclick="closePdfSelector()" class="pdf-select-close">✕ 閉じる</button></div>
-            <div class="pdf-select-actions"><button type="button" onclick="togglePdfSelection(true)">すべて選択</button><button type="button" onclick="togglePdfSelection(false)">選択解除</button><span id="pdf-select-count">0件選択中</span></div>
+            <div style="margin:12px 0 8px;padding:12px;background:#fff;border:1px solid #e5dafa;border-radius:12px">
+              <label for="pdf-month-filter" style="display:block;font-size:13px;font-weight:800;margin-bottom:7px">📅 表示する月を選択</label>
+              <select id="pdf-month-filter" onchange="renderPdfSelectionList()" style="width:100%;padding:11px;border:1px solid #cfc2f8;border-radius:9px;background:white;font-size:14px"></select>
+              <div id="pdf-month-help" style="font-size:11px;color:#655b78;margin-top:7px">月を切り替えてもチェックは保持されます。</div>
+            </div>
+            <div class="pdf-select-actions"><button type="button" onclick="togglePdfSelection(true)">表示中をすべて選択</button><button type="button" onclick="togglePdfSelection(false)">表示中を選択解除</button><span id="pdf-select-count">0件選択中</span></div>
             <div id="pdf-select-list" class="pdf-select-list"></div>
             <div style="margin:14px 0;padding:13px;background:#f5f1ff;border-radius:12px">
               <label for="pdf-per-page" style="display:block;font-size:13px;font-weight:900;margin-bottom:8px">📄 A4用紙1枚に表示する記録数</label>
@@ -1436,8 +1441,9 @@ function pdfOpen(title,slides,pageMode="portrait"){
   .toolbar .back-btn{background:#eee6ff;color:#50318b}.toolbar .image-btn{background:#e2f4e9;color:#245c39}
   #image-status{width:100%;text-align:center;font-size:12px;color:white;min-height:1em}
   .diary-sheet{width:210mm;height:297mm;padding:5mm;margin:12px auto;background:#fff;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:2.5mm;overflow:hidden;page-break-after:always;break-after:page}
-  .diary-mini{min-width:0;min-height:0;overflow:hidden;border:1px solid #dfe4dc;border-radius:2.5mm;background:#fbfcf9;padding:2.5mm;display:flex;flex-direction:column;gap:1.5mm;break-inside:avoid}
-  .diary-mini-photo{height:40%;min-height:0;flex:none;background:#edf0eb;border-radius:1.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#8b938c;font-size:10px}
+  .diary-mini{min-width:0;min-height:0;overflow:hidden;border:1px solid #dfe4dc;border-radius:2.5mm;background:#fbfcf9;padding:2.5mm;display:grid;grid-template-columns:38% minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:2mm;break-inside:avoid}
+  .diary-mini-content{min-width:0;min-height:0;display:flex;flex-direction:column;gap:1.5mm;overflow:hidden}
+  .diary-mini-photo{height:100%;width:100%;min-height:0;min-width:0;background:#edf0eb;border-radius:1.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#8b938c;font-size:10px}
   .diary-mini-photo img{width:100%;height:100%;object-fit:cover}
   .diary-mini-meta{font-size:clamp(8px,1vw,11px);color:#687469;line-height:1.3;overflow-wrap:anywhere}
   .diary-mini-title{font-size:clamp(10px,1.3vw,16px);font-weight:900;line-height:1.3;overflow-wrap:anywhere;max-height:3em;overflow:hidden}
@@ -1494,10 +1500,10 @@ function exportVarietyNotePDF(selectedKeys=null,perPage=12){
     const stars=[['甘味',n.sweet],['香り',n.aroma],['酸味',n.acid],['作りやすさ',n.easy]].map(([label,val])=>`${label} ${pdfStars(val)}`).join(' / ');
     return `<article class="diary-mini">
       <div class="diary-mini-photo">${photo?`<img src="${photo}" alt="">`:'写真なし'}</div>
-      <div class="diary-mini-title">🍇 ${pdfEsc(n.name||'ぶどう品種')}</div>
+      <div class="diary-mini-content"><div class="diary-mini-title">🍇 ${pdfEsc(n.name||'ぶどう品種')}</div>
       <div class="diary-mini-text">${pdfEsc(n.feature||'')}<br>${pdfEsc(n.memo||'')}</div>
       <div class="note-mini-stars">${pdfEsc(stars)}</div>
-      ${n.price?`<div class="diary-mini-tags">一般価格 ${Number(n.price).toLocaleString()}円</div>`:''}
+      ${n.price?`<div class="diary-mini-tags">一般価格 ${Number(n.price).toLocaleString()}円</div>`:''}</div>
     </article>`;
   });
   pdfOpen('ぶどう品種note',pdfMakeSheets(cards,perPage));
@@ -1509,10 +1515,10 @@ function exportGrapeDiaryPDF(selectedIds=null,perPage=12){
     const tags=[e.size?`粒 ${pdfEsc(e.size)}mm`:'',e.color?`色 ${pdfEsc(e.color)}`:''].filter(Boolean).join(' ・ ');
     return `<article class="diary-mini">
       <div class="diary-mini-photo">${photo?`<img src="${photo}" alt="">`:'写真なし'}</div>
-      <div class="diary-mini-meta">${pdfEsc(e.date||'日付未設定')}　${pdfEsc(e.variety||'')}</div>
+      <div class="diary-mini-content"><div class="diary-mini-meta">${pdfEsc(e.date||'日付未設定')}　${pdfEsc(e.variety||'')}</div>
       <div class="diary-mini-title">${pdfEsc(e.title||'無題の記録')}</div>
       <div class="diary-mini-text">${pdfEsc(e.note||e.body||e.condition||'')}</div>
-      ${tags?`<div class="diary-mini-tags">${tags}</div>`:''}
+      ${tags?`<div class="diary-mini-tags">${tags}</div>`:''}</div>
     </article>`;
   });
   pdfOpen('じぃじのぶどう日記',pdfMakeSheets(cards,perPage));
@@ -1521,33 +1527,58 @@ function exportGrapeDiaryPDF(selectedIds=null,perPage=12){
 
 /* PDF selection is transient UI state; existing diary/note data is never modified. */
 let pdfSelectionMode=null;
+let pdfSelectedRecordIds=new Set();
 function pdfSelectionRecords(){
-  if(pdfSelectionMode==='note')return Object.entries(state.varietyNotes||{}).filter(([key,n])=>n).map(([key,n])=>({id:key,title:n.name||key,subtitle:'ぶどう品種note',photo:(n.photos||[])[0]||''}));
-  return [...(state.gdvEntries||[])].filter(Boolean).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(e=>({id:String(e.id),title:e.title||'無題の記録',subtitle:[e.date,e.variety].filter(Boolean).join(' ・ '),photo:e.photo||(Array.isArray(e.legacyPhotos)?e.legacyPhotos[0]:'')}));
+  if(pdfSelectionMode==='note')return Object.entries(state.varietyNotes||{}).filter(([key,n])=>n).map(([key,n])=>({id:key,title:n.name||key,subtitle:'ぶどう品種note',photo:(n.photos||[])[0]||'',month:/^\d{4}-\d{2}/.test(String(n.updatedAt||''))?String(n.updatedAt).slice(0,7):'undated'})).sort((a,b)=>b.month.localeCompare(a.month));
+  return [...(state.gdvEntries||[])].filter(Boolean).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(e=>({id:String(e.id),title:e.title||'無題の記録',subtitle:[e.date,e.variety].filter(Boolean).join(' ・ '),photo:e.photo||(Array.isArray(e.legacyPhotos)?e.legacyPhotos[0]:''),month:/^\d{4}-\d{2}/.test(String(e.date||''))?String(e.date).slice(0,7):'undated'}));
 }
+function pdfMonthLabel(month){if(month==='undated')return '日付不明';const [y,m]=month.split('-');return Number(y)+'年'+Number(m)+'月'}
 function openPdfSelector(mode){
   pdfSelectionMode=mode;
+  pdfSelectedRecordIds=new Set();
   document.getElementById('pdf-select-title').textContent=mode==='note'?'🍇 PDFにする品種noteを選択':'📖 PDFにする日記を選択';
+  document.getElementById('pdf-month-help').textContent=mode==='note'?'品種noteは最終保存月ごとに表示します。月を切り替えてもチェックは保持されます。':'日記の日付ごとに表示します。月を切り替えてもチェックは保持されます。';
+  const months=[...new Set(pdfSelectionRecords().map(r=>r.month))].sort((a,b)=>b.localeCompare(a));
+  const selector=document.getElementById('pdf-month-filter');selector.replaceChildren();
+  const all=document.createElement('option');all.value='all';all.textContent='すべての月';selector.appendChild(all);
+  months.forEach(month=>{const option=document.createElement('option');option.value=month;option.textContent=pdfMonthLabel(month);selector.appendChild(option)});
+  selector.value=months[0]||'all';
+  document.getElementById('pdf-select-panel').style.display='block';
+  renderPdfSelectionList();
+  document.getElementById('pdf-select-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function renderPdfSelectionList(){
   const records=pdfSelectionRecords();
-  const list=document.getElementById('pdf-select-list');
-  list.replaceChildren();
-  if(!records.length){const empty=document.createElement('p');empty.textContent='まだ記録がありません';empty.style.cssText='padding:14px;font-size:13px;color:#777';list.appendChild(empty)}
-  records.forEach(rec=>{
+  const month=document.getElementById('pdf-month-filter').value;
+  const shown=records.filter(rec=>month==='all'||rec.month===month);
+  const list=document.getElementById('pdf-select-list');list.replaceChildren();
+  if(!shown.length){const empty=document.createElement('p');empty.textContent='この月の記録はありません';empty.style.cssText='padding:14px;font-size:13px;color:#777';list.appendChild(empty)}
+  shown.forEach(rec=>{
     const label=document.createElement('label');label.className='pdf-select-item';
-    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='pdf-record-check';checkbox.value=rec.id;checkbox.checked=true;checkbox.addEventListener('change',updatePdfSelectionCount);label.appendChild(checkbox);
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.className='pdf-record-check';checkbox.value=rec.id;checkbox.checked=pdfSelectedRecordIds.has(rec.id);
+    checkbox.addEventListener('change',()=>{if(checkbox.checked)pdfSelectedRecordIds.add(rec.id);else pdfSelectedRecordIds.delete(rec.id);updatePdfSelectionCount()});label.appendChild(checkbox);
     if(rec.photo){const img=document.createElement('img');img.src=rec.photo;img.alt='';label.appendChild(img)}
     const info=document.createElement('span');info.className='pdf-item-text';
     const title=document.createElement('strong');title.textContent=rec.title;info.appendChild(title);
     const sub=document.createElement('small');sub.textContent=rec.subtitle;info.appendChild(sub);label.appendChild(info);list.appendChild(label);
   });
-  document.getElementById('pdf-select-panel').style.display='block';updatePdfSelectionCount();
-  document.getElementById('pdf-select-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  updatePdfSelectionCount();
 }
-function closePdfSelector(){document.getElementById('pdf-select-panel').style.display='none';pdfSelectionMode=null}
-function togglePdfSelection(checked){document.querySelectorAll('#pdf-select-list .pdf-record-check').forEach(el=>el.checked=checked);updatePdfSelectionCount()}
-function updatePdfSelectionCount(){const n=document.querySelectorAll('#pdf-select-list .pdf-record-check:checked').length;document.getElementById('pdf-select-count').textContent=n+'件選択中';document.querySelector('.pdf-select-submit').disabled=n===0;document.querySelector('.pdf-select-submit').style.opacity=n===0?'.5':'1'}
+function closePdfSelector(){document.getElementById('pdf-select-panel').style.display='none';pdfSelectionMode=null;pdfSelectedRecordIds.clear()}
+function togglePdfSelection(checked){
+  document.querySelectorAll('#pdf-select-list .pdf-record-check').forEach(el=>{el.checked=checked;if(checked)pdfSelectedRecordIds.add(el.value);else pdfSelectedRecordIds.delete(el.value)});
+  updatePdfSelectionCount();
+}
+function updatePdfSelectionCount(){
+  const valid=new Set(pdfSelectionRecords().map(r=>r.id));
+  for(const id of pdfSelectedRecordIds){if(!valid.has(id))pdfSelectedRecordIds.delete(id)}
+  const n=pdfSelectedRecordIds.size;
+  document.getElementById('pdf-select-count').textContent=n+'件選択中（全月合計）';
+  document.querySelector('.pdf-select-submit').disabled=n===0;
+  document.querySelector('.pdf-select-submit').style.opacity=n===0?'.5':'1';
+}
 function exportSelectedPDF(){
-  const selected=[...document.querySelectorAll('#pdf-select-list .pdf-record-check:checked')].map(el=>el.value);
+  const selected=[...pdfSelectedRecordIds];
   if(!selected.length){showToast('PDFにする記録を選択してください');return}
   const perPage=Number(document.getElementById('pdf-per-page').value)||12;
   if(pdfSelectionMode==='note')exportVarietyNotePDF(selected,perPage);
