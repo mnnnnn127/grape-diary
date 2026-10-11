@@ -1175,7 +1175,7 @@ button {
             <div style="margin:14px 0;padding:13px;background:#f5f1ff;border-radius:12px">
               <label for="pdf-per-page" style="display:block;font-size:13px;font-weight:900;margin-bottom:8px">📄 A4用紙1枚に表示する記録数</label>
               <select id="pdf-per-page" style="width:100%;padding:12px;border:1px solid #cfc2f8;border-radius:10px;background:white;font-size:15px">
-                <option value="4">4枚（2列 × 2段）</option><option value="6">6枚（2列 × 3段）</option><option value="8">8枚（2列 × 4段）</option><option value="10">10枚（2列 × 5段）</option><option value="12" selected>12枚（4列 × 3段）</option>
+                <option value="2">2枚（1列 × 2段）</option><option value="4" selected>4枚（2列 × 2段）</option><option value="6">6枚（2列 × 3段）</option><option value="8">8枚（2列 × 4段）</option><option value="10">10枚（2列 × 5段）</option><option value="12">12枚（3列 × 4段）</option>
               </select>
               <div style="font-size:11px;color:#655b78;margin-top:7px">選択した件数に応じて複数ページになります。各ページをA4いっぱいに配置します。</div>
             </div>
@@ -1422,25 +1422,30 @@ function pdfOpen(title,slides,pageMode="portrait"){
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
   <style>
   @page{size:A4 portrait;margin:0}*{box-sizing:border-box}
-  body{margin:0;background:#e8ece8;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;color:#24342b}
-  .toolbar{position:sticky;top:0;z-index:5;padding:12px;display:flex;gap:9px;justify-content:center;flex-wrap:wrap;background:rgba(35,48,39,.96)}
-  .toolbar button{border:0;border-radius:999px;padding:11px 16px;font-weight:800;font-size:13px;background:#fff;color:#33453a;cursor:pointer}
-  .toolbar .back-btn{background:#eee6ff;color:#50318b}.toolbar .image-btn{background:#e2f4e9;color:#245c39}
-  #image-status{width:100%;text-align:center;font-size:12px;color:white;min-height:1em}
-  .diary-sheet{width:210mm;height:297mm;padding:5mm;margin:12px auto;background:#fff;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:2.5mm;overflow:hidden;page-break-after:always;break-after:page}
-  .diary-mini{min-width:0;min-height:0;overflow:hidden;border:1px solid #dfe4dc;border-radius:2.5mm;background:#fbfcf9;padding:2.5mm;display:grid;grid-template-columns:38% minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:2mm;break-inside:avoid}
-  .diary-mini-content{min-width:0;min-height:0;display:flex;flex-direction:column;gap:1.5mm;overflow:hidden}
-  .diary-mini-photo{height:100%;width:100%;min-height:0;min-width:0;background:#edf0eb;border-radius:1.5mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#8b938c;font-size:10px}
-  .diary-mini-photo img{display:block;width:100%;height:100%;object-fit:contain;object-position:center center}
-  .diary-mini-meta{font-size:clamp(8px,1vw,11px);color:#687469;line-height:1.3;overflow-wrap:anywhere}
-  .diary-mini-title{font-size:clamp(10px,1.3vw,16px);font-weight:900;line-height:1.3;overflow-wrap:anywhere;max-height:3em;overflow:hidden}
-  .diary-mini-text{font-size:clamp(9px,1vw,12px);line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden;flex:1}
-  .diary-mini-tags{font-size:9px;color:#5d497f;line-height:1.3;overflow-wrap:anywhere}
-  .note-mini-stars{font-size:10px;color:#886418;line-height:1.5}
-  @media screen and (max-width:800px){.diary-sheet{margin:10px auto;transform-origin:top center}}
-  @media print{body{background:#fff}.toolbar{display:none}.diary-sheet{margin:0;box-shadow:none;break-after:page;page-break-after:always}.diary-mini{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  body{margin:0;background:#f7f5f0;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;color:#4a3e3d}
+  .toolbar{position:sticky;top:0;z-index:5;padding:12px;display:flex;gap:9px;justify-content:center;flex-wrap:wrap;background:#7350a1}
+  .toolbar button{border:0;border-radius:999px;padding:11px 16px;font-weight:800;font-size:13px;background:#fff;color:#50318b;cursor:pointer}
+  .toolbar .back-btn{background:#eee6ff}.toolbar .image-btn{background:#e2f4e9;color:#245c39}
+  #image-status,.print-help{width:100%;text-align:center;font-size:12px;color:white;line-height:1.6}
+  .diary-sheet{width:210mm;height:297mm;padding:12mm 15mm;margin:16px auto;background:#fdfbf7;display:flex;flex-direction:column;gap:3mm;box-shadow:0 8px 24px #4a3e3d22;overflow:hidden}
+  .sheet-header{display:flex;align-items:center;justify-content:space-between;gap:5mm;border-bottom:2px solid #e3d1ef;padding-bottom:3mm;color:#583275}
+  .sheet-header h1{font-size:18px;margin:0 0 1mm}.sheet-header small{font-size:10px;color:#9873ac}
+  .sheet-page{font-size:11px;background:#f8edcf;border:1px solid #eddcaf;border-radius:20px;padding:2mm 3mm;white-space:nowrap}
+  .sheet-grid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr));gap:2.5mm;flex:1;min-height:0}
+  .sheet-footer{display:flex;justify-content:space-between;border-top:1px solid #e9deef;padding-top:2mm;font-size:9px;color:#a3929c}
+  .diary-mini{min-width:0;min-height:0;overflow:hidden;border:1.5px solid #ebdcd0;border-radius:3mm;background:#fff;padding:2.5mm;display:flex;flex-direction:column;gap:1.5mm;break-inside:avoid;text-align:center}
+  .diary-mini-content{display:contents}
+  .diary-mini-meta{order:0;display:flex;justify-content:space-between;align-items:center;gap:2mm;font-size:9px;color:#916c47;overflow-wrap:anywhere}
+  .variety-pill{background:#ecf5df;border:1px solid #cfe2b8;border-radius:20px;padding:1mm 2mm;color:#567137;text-align:center}
+  .diary-mini-title{order:1;font-size:14px;font-weight:900;line-height:1.4;color:#503164;overflow-wrap:anywhere}
+  .diary-mini-photo{order:2;flex:1;min-height:10mm;width:100%;background:#fcf8ef;border:1px solid #f0ebe1;border-radius:2mm;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#a3929c;font-size:10px}
+  .diary-mini-photo img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+  .diary-mini-text{order:3;flex:0 0 auto;max-height:30%;border-top:1px dashed #ecdfcc;padding-top:1.5mm;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden}
+  .diary-mini-tags,.note-mini-stars{order:4;font-size:9px;color:#957230;line-height:1.4}
+  .diary-sheet.dense .diary-mini{padding:2mm;gap:1mm}.dense .diary-mini-title{font-size:11px}.dense .diary-mini-text{font-size:9px}.dense .diary-mini-meta{font-size:8px}
+  @media print{body{background:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}.toolbar{display:none}.diary-sheet{margin:0;box-shadow:none;break-after:page;page-break-after:always}.diary-sheet:last-child{break-after:auto;page-break-after:auto}}
   </style></head><body>
-  <div class="toolbar"><button type="button" class="back-btn" onclick="if(window.opener&&!window.opener.closed){window.opener.focus()}window.close()">← 設定に戻る</button><button type="button" onclick="window.print()">🖨 印刷 / PDF保存</button><button type="button" class="image-btn" onclick="downloadSheets()">🖼 画像としてダウンロード</button><div id="image-status"></div></div>
+  <div class="toolbar"><button type="button" class="back-btn" onclick="if(window.opener&&!window.opener.closed){window.opener.focus()}window.close()">← 設定に戻る</button><button type="button" onclick="window.print()">🖨 印刷 / PDF保存</button><button type="button" class="image-btn" onclick="downloadSheets()">🖼 画像としてダウンロード</button><div class="print-help">A4・縦向きで印刷。背景のグラフィックをオン、ヘッダーとフッターをオフにしてください。文章が長い場合は配置枚数を減らしてください。</div><div id="image-status"></div></div>
   ${slides.join("")}
   <script>
   async function downloadSheets(){
@@ -1468,19 +1473,21 @@ function pdfCover(title,sub){
   return `<section class="slide cover"><div class="eyebrow">JIJI'S GRAPE NOTE</div><h1>${pdfEsc(title)}</h1><p>${pdfEsc(sub)}</p><div class="accent"></div></section>`;
 }
 function pdfSheetLayout(perPage){
-  const cols=perPage===12?4:2;
+  perPage=[2,4,6,8,10,12].includes(Number(perPage))?Number(perPage):4;
+  const cols=perPage===2?1:perPage===12?3:2;
   return {cols,rows:perPage/cols};
 }
-function pdfMakeSheets(cards,perPage){
+function pdfMakeSheets(cards,perPage,title="じぃじのぶどう日記"){
+  perPage=[2,4,6,8,10,12].includes(Number(perPage))?Number(perPage):4;
   const {cols,rows}=pdfSheetLayout(perPage);
   const sheets=[];
   if(!cards.length)cards=['<article class="diary-mini">記録がありません</article>'];
   for(let i=0;i<cards.length;i+=perPage){
-    sheets.push(`<section class="diary-sheet" style="--cols:${cols};--rows:${rows}">${cards.slice(i,i+perPage).join('')}</section>`);
+    sheets.push(`<section class="diary-sheet ${perPage>=8?'dense':''}" style="--cols:${cols};--rows:${rows}"><header class="sheet-header"><div><h1>🍇 ${pdfEsc(title)}</h1><small>Grandpa’s Grape Diary · 大切なぶどうの記録</small></div><span class="sheet-page">Page ${Math.floor(i/perPage)+1} / ${Math.ceil(cards.length/perPage)}</span></header><div class="sheet-grid">${cards.slice(i,i+perPage).join('')}</div><footer class="sheet-footer"><span>🍇 じぃじのぶどう記録シート</span><span>作成日：${new Date().toLocaleDateString('ja-JP')}</span></footer></section>`);
   }
   return sheets;
 }
-function exportVarietyNotePDF(selectedKeys=null,perPage=12){
+function exportVarietyNotePDF(selectedKeys=null,perPage=4){
   const notes=Object.entries(state.varietyNotes||{}).filter(([k,n])=>n&&(selectedKeys===null||selectedKeys.includes(k))).map(([k,n])=>n);
   const cards=notes.map(n=>{
     const photo=(n.photos||[])[0];
@@ -1493,16 +1500,16 @@ function exportVarietyNotePDF(selectedKeys=null,perPage=12){
       ${n.price?`<div class="diary-mini-tags">一般価格 ${Number(n.price).toLocaleString()}円</div>`:''}</div>
     </article>`;
   });
-  pdfOpen('ぶどう品種note',pdfMakeSheets(cards,perPage));
+  pdfOpen('ぶどう品種note',pdfMakeSheets(cards,perPage,'ぶどう品種note'));
 }
-function exportGrapeDiaryPDF(selectedIds=null,perPage=12){
+function exportGrapeDiaryPDF(selectedIds=null,perPage=4){
   const entries=[...(state.gdvEntries||[])].filter(e=>e&&(selectedIds===null||selectedIds.includes(String(e.id)))).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   const cards=entries.map(e=>{
     const photo=e.photo||(Array.isArray(e.legacyPhotos)?e.legacyPhotos[0]:'');
     const tags=[e.size?`粒 ${pdfEsc(e.size)}mm`:'',e.color?`色 ${pdfEsc(e.color)}`:''].filter(Boolean).join(' ・ ');
     return `<article class="diary-mini">
       <div class="diary-mini-photo">${photo?`<img src="${photo}" alt="">`:'写真なし'}</div>
-      <div class="diary-mini-content"><div class="diary-mini-meta">${pdfEsc(e.date||'日付未設定')}　${pdfEsc(e.variety||'')}</div>
+      <div class="diary-mini-content"><div class="diary-mini-meta"><span class="variety-pill">🍇 ${pdfEsc(e.variety||'')}</span><span>${pdfEsc(e.date||'日付未設定')}</span></div>
       <div class="diary-mini-title">${pdfEsc(e.title||'無題の記録')}</div>
       <div class="diary-mini-text">${pdfEsc(e.note||e.body||e.condition||'')}</div>
       ${tags?`<div class="diary-mini-tags">${tags}</div>`:''}</div>
@@ -1567,7 +1574,7 @@ function updatePdfSelectionCount(){
 function exportSelectedPDF(){
   const selected=[...pdfSelectedRecordIds];
   if(!selected.length){showToast('PDFにする記録を選択してください');return}
-  const perPage=Number(document.getElementById('pdf-per-page').value)||12;
+  const perPage=Number(document.getElementById('pdf-per-page').value)||4;
   if(pdfSelectionMode==='note')exportVarietyNotePDF(selected,perPage);
   else if(pdfSelectionMode==='diary')exportGrapeDiaryPDF(selected,perPage);
 }
